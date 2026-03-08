@@ -1,5 +1,6 @@
 // Update this page (the content is just a fallback if you fail to update the page)
 import { useState, useEffect, useRef, useCallback } from "react";
+import FixtureLibrary from "@/components/FixtureLibrary";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const CONSOLES = [
@@ -923,6 +924,7 @@ export default function App() {
           {[
             { id: "guide", label: "AI GUIDE", icon: "◈" },
             { id: "osc", label: "OSC CONTROL", icon: "⊕" },
+            { id: "fixtures", label: "FIXTURES", icon: "⬡" },
             { id: "live", label: "LIVE STAGE", icon: "◉" },
           ].map((tab) => (
             <button
@@ -1657,6 +1659,11 @@ export default function App() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ══ MODULE: FIXTURES ══ */}
+        {activeModule === "fixtures" && (
+          <FixtureLibrary onPatch={sendOsc} />
         )}
 
         {/* ══ MODULE: LIVE STAGE ══ */}
