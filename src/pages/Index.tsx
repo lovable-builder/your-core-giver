@@ -646,6 +646,40 @@ export default function App() {
   const [customPath, setCustomPath] = useState("");
   const [customVal, setCustomVal] = useState("");
 
+  // WebSocket bridge state
+  const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8080";
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsReconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+
+  // WebSocket connection effect
+  useEffect(() => {
+    let disposed = false;
+    const connect = () => {
+      if (disposed) return;
+      try {
+        const ws = new WebSocket(BRIDGE_URL);
+        wsRef.current = ws;
+        ws.onopen = () => { if (!disposed) setWsConnected(true); };
+        ws.onclose = () => {
+          if (!disposed) {
+            setWsConnected(false);
+            wsReconnectRef.current = setTimeout(connect, 3000);
+          }
+        };
+        ws.onerror = () => { ws.close(); };
+      } catch {
+        if (!disposed) wsReconnectRef.current = setTimeout(connect, 3000);
+      }
+    };
+    connect();
+    return () => {
+      disposed = true;
+      if (wsReconnectRef.current) clearTimeout(wsReconnectRef.current);
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, [BRIDGE_URL]);
+
   // Live state
   const [channels, setChannels] = useState(() =>
     Array.from({ length: 32 }, (_, i) => ({
@@ -704,8 +738,13 @@ export default function App() {
 
   const sendOsc = useCallback((path, vals = {}) => {
     const time = new Date().toLocaleTimeString("en-GB", { hour12: false });
-    setOscLogs((prev) => [...prev.slice(-99), { time, path, val: Object.values(vals).filter(Boolean).join(", ") }]);
-  }, []);
+    const valStr = Object.values(vals).filter(Boolean).join(", ");
+    setOscLogs((prev) => [...prev.slice(-99), { time, path, val: valStr }]);
+    // Send via WebSocket bridge
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ path, value: valStr || null, host: oscHost, port: parseInt(oscPort, 10) }));
+    }
+  }, [oscHost, oscPort]);
 
   const handleQuickAction = (action) => {
     sendOsc(action.path);
@@ -913,6 +952,35 @@ export default function App() {
         {/* Status */}
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <SpectrumBar active={specActive} />
+          {/* WebSocket Bridge Status */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 12px",
+              borderRadius: "20px",
+              background: wsConnected ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+              border: `1px solid ${wsConnected ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.2)"}`,
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            title={wsConnected ? `Connected to ${BRIDGE_URL}` : `Disconnected — trying ${BRIDGE_URL}`}
+            onClick={() => window.open("/bridge.js", "_blank")}
+          >
+            <div
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: wsConnected ? "#22c55e" : "#ef4444",
+                animation: wsConnected ? "pulse-ring 2s infinite" : "none",
+              }}
+            />
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", color: wsConnected ? "#22c55e" : "#ef4444" }}>
+              {wsConnected ? "BRIDGE" : "OFFLINE"}
+            </span>
+          </div>
           {selectedConsole && (
             <div
               style={{
