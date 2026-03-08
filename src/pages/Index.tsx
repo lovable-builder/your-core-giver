@@ -687,6 +687,8 @@ export default function App() {
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
+  const [msgCount, setMsgCount] = useState(0);
+  const [lastMsg, setLastMsg] = useState("");
 
   // Console feedback state
   const [consoleFeedback, setConsoleFeedback] = useState<{
