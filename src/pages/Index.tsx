@@ -952,6 +952,35 @@ export default function App() {
         {/* Status */}
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <SpectrumBar active={specActive} />
+          {/* WebSocket Bridge Status */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 12px",
+              borderRadius: "20px",
+              background: wsConnected ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+              border: `1px solid ${wsConnected ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.2)"}`,
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            title={wsConnected ? `Connected to ${BRIDGE_URL}` : `Disconnected — trying ${BRIDGE_URL}`}
+            onClick={() => window.open("/bridge.js", "_blank")}
+          >
+            <div
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: wsConnected ? "#22c55e" : "#ef4444",
+                animation: wsConnected ? "pulse-ring 2s infinite" : "none",
+              }}
+            />
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", color: wsConnected ? "#22c55e" : "#ef4444" }}>
+              {wsConnected ? "BRIDGE" : "OFFLINE"}
+            </span>
+          </div>
           {selectedConsole && (
             <div
               style={{
