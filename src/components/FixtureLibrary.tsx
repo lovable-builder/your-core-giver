@@ -138,9 +138,8 @@ export default function FixtureLibrary({ onPatch }: FixtureLibraryProps) {
       };
       newEntries.push(entry);
 
-      // Send OSC patch command for each
-      // /eos/newcmd/Chan {channel} Patch {universe}/{address} Enter
-      onPatch(`/eos/newcmd/Chan ${ch} Patch ${uni}/${addr} Enter`, {});
+      // Send EOS command-line patch command via /eos/cmd ("#" acts as Enter)
+      onPatch("/eos/cmd", { a: `Chan ${ch} Patch ${uni}/${addr}#` });
     }
 
     setPatchList((prev) => [...prev, ...newEntries]);
@@ -149,7 +148,7 @@ export default function FixtureLibrary({ onPatch }: FixtureLibraryProps) {
   const removePatch = (id: string) => {
     const entry = patchList.find((p) => p.id === id);
     if (entry) {
-      onPatch(`/eos/newcmd/Chan ${entry.startChannel} Unpatch Enter`, {});
+      onPatch("/eos/cmd", { a: `Chan ${entry.startChannel} Unpatch#` });
     }
     setPatchList((prev) => prev.filter((p) => p.id !== id));
   };

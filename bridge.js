@@ -21,9 +21,20 @@ udpPort.on("error", (err) => console.error("  UDP error:", err.message));
 
 function parseEosCommand(path, value) {
   const prefix = "/eos/newcmd/";
+
+  // If user sent human-readable command with spaces, convert to /eos/newcmd + string arg.
+  // If it's already tokenized (slash-separated), pass through unchanged.
   if (path.startsWith(prefix) && path.length > prefix.length) {
-    return { address: "/eos/newcmd", args: [{ type: "s", value: path.slice(prefix.length) }] };
+    const suffix = path.slice(prefix.length);
+    if (suffix.includes(" ")) {
+      return {
+        address: "/eos/newcmd",
+        args: [{ type: "s", value: suffix }],
+      };
+    }
+    return { address: path, args: [] };
   }
+
   const args = [];
   if (value !== undefined && value !== null && value !== "") {
     const num = Number(value);
