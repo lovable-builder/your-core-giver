@@ -1,14 +1,1867 @@
 // Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect, useRef, useCallback } from "react";
 
-const Index = () => {
+// ── CONSTANTS ─────────────────────────────────────────────────────────────────
+const CONSOLES = [
+  { id: "eos-ti", name: "Eos Ti", desc: "Flagship", color: "#FF6B2B" },
+  { id: "ion-xe", name: "Ion Xe", desc: "Mid-size", color: "#FF8C42" },
+  { id: "element2", name: "Element 2", desc: "Compact", color: "#FFA559" },
+  { id: "nomad", name: "Nomad", desc: "Software", color: "#FFB347" },
+  { id: "colorsource", name: "ColorSource", desc: "Entry", color: "#FFC27A" },
+];
+
+const OSC_TABS = ["Channels", "Cues", "Effects", "Patching", "Groups", "Palettes", "Macros", "System"];
+
+const OSC_COMMANDS = {
+  Channels: [
+    { label: "Select", path: "/eos/newcmd/Chan {a} Enter", params: ["Channel"] },
+    { label: "Intensity", path: "/eos/newcmd/Chan {a} At {b} Enter", params: ["Channel", "Level 0–100"] },
+    { label: "Full", path: "/eos/newcmd/Chan {a} Full Enter", params: ["Channel"] },
+    { label: "Out", path: "/eos/newcmd/Chan {a} Out Enter", params: ["Channel"] },
+    { label: "Range", path: "/eos/newcmd/Chan {a} Thru {b} Enter", params: ["From", "To"] },
+    { label: "Snap", path: "/eos/newcmd/Chan {a} Sneak Enter", params: ["Channel"] },
+  ],
+  Cues: [
+    { label: "Go", path: "/eos/cue/go", params: [] },
+    { label: "Back", path: "/eos/cue/back", params: [] },
+    { label: "Load", path: "/eos/cue/{a}/fire", params: ["Cue #"] },
+    { label: "Record", path: "/eos/newcmd/Cue {a} Record Enter", params: ["Cue #"] },
+    { label: "Update", path: "/eos/newcmd/Cue {a} Update Enter", params: ["Cue #"] },
+    { label: "Delete", path: "/eos/newcmd/Cue {a} Delete Enter", params: ["Cue #"] },
+    { label: "Label", path: "/eos/newcmd/Cue {a} Label {b} Enter", params: ["Cue #", "Label"] },
+    { label: "Time", path: "/eos/newcmd/Cue {a} Time {b} Enter", params: ["Cue #", "Seconds"] },
+  ],
+  Effects: [
+    { label: "Apply", path: "/eos/newcmd/Chan {a} Effect {b} Enter", params: ["Channel", "Effect #"] },
+    { label: "Rate", path: "/eos/fx/{a}/rate", params: ["Effect #"] },
+    { label: "Size", path: "/eos/fx/{a}/size", params: ["Effect #"] },
+    { label: "Offset", path: "/eos/fx/{a}/offset", params: ["Effect #"] },
+    { label: "Stop", path: "/eos/newcmd/Chan {a} Effect Stop Enter", params: ["Channel"] },
+    { label: "Record FX", path: "/eos/newcmd/Effect {a} Record Enter", params: ["Effect #"] },
+  ],
+  Patching: [
+    { label: "Patch", path: "/eos/newcmd/Chan {a} Patch {b} Enter", params: ["Channel", "DMX Addr"] },
+    { label: "Unpatch", path: "/eos/newcmd/Chan {a} Unpatch Enter", params: ["Channel"] },
+    { label: "Offset", path: "/eos/newcmd/Chan {a} Offset {b} Enter", params: ["Channel", "Offset"] },
+    { label: "Universe", path: "/eos/newcmd/Chan {a} Patch {b}/{c} Enter", params: ["Chan", "Universe", "Addr"] },
+  ],
+  Groups: [
+    { label: "Select", path: "/eos/newcmd/Group {a} Enter", params: ["Group #"] },
+    { label: "Record", path: "/eos/newcmd/Group {a} Record Enter", params: ["Group #"] },
+    { label: "Update", path: "/eos/newcmd/Group {a} Update Enter", params: ["Group #"] },
+    { label: "Delete", path: "/eos/newcmd/Group {a} Delete Enter", params: ["Group #"] },
+  ],
+  Palettes: [
+    { label: "Color", path: "/eos/newcmd/Color Palette {a} Enter", params: ["Palette #"] },
+    { label: "Intensity", path: "/eos/newcmd/Intensity Palette {a} Enter", params: ["Palette #"] },
+    { label: "Focus", path: "/eos/newcmd/Focus Palette {a} Enter", params: ["Palette #"] },
+    { label: "Beam", path: "/eos/newcmd/Beam Palette {a} Enter", params: ["Palette #"] },
+    { label: "Rec Color", path: "/eos/newcmd/Color Palette {a} Record Enter", params: ["Palette #"] },
+    { label: "Update", path: "/eos/newcmd/Color Palette {a} Update Enter", params: ["Palette #"] },
+  ],
+  Macros: [
+    { label: "Fire", path: "/eos/macro/{a}/fire", params: ["Macro #"] },
+    { label: "Record", path: "/eos/newcmd/Macro {a} Record Enter", params: ["Macro #"] },
+    { label: "Stop", path: "/eos/newcmd/Macro {a} Stop Enter", params: ["Macro #"] },
+    { label: "Delete", path: "/eos/newcmd/Macro {a} Delete Enter", params: ["Macro #"] },
+  ],
+  System: [
+    { label: "Undo", path: "/eos/newcmd/Undo Enter", params: [] },
+    { label: "Clear", path: "/eos/newcmd/Clear Enter", params: [] },
+    { label: "Highlight", path: "/eos/key/highlight", params: [] },
+    { label: "Blind", path: "/eos/key/blind", params: [] },
+    { label: "Live", path: "/eos/key/live", params: [] },
+    { label: "Stage", path: "/eos/key/stage", params: [] },
+    { label: "Park", path: "/eos/newcmd/Park Enter", params: [] },
+    { label: "Assert", path: "/eos/newcmd/Assert Enter", params: [] },
+  ],
+};
+
+const QUICK_ACTIONS = [
+  { label: "GO", path: "/eos/cue/go", color: "#22c55e" },
+  { label: "BACK", path: "/eos/cue/back", color: "#3b82f6" },
+  { label: "CLEAR", path: "/eos/newcmd/Clear Enter", color: "#f97316" },
+  { label: "UNDO", path: "/eos/newcmd/Undo Enter", color: "#8b5cf6" },
+  { label: "BLIND", path: "/eos/key/blind", color: "#ec4899" },
+  { label: "LIVE", path: "/eos/key/live", color: "#10b981" },
+  { label: "FULL", path: "/eos/newcmd/Full Enter", color: "#f59e0b" },
+  { label: "OUT", path: "/eos/newcmd/Out Enter", color: "#6b7280" },
+];
+
+const STEP_COLORS = {
+  mode: "#FF6B2B",
+  keypad: "#3B82F6",
+  command: "#8B5CF6",
+  record: "#EF4444",
+  confirm: "#10B981",
+  soft: "#EAB308",
+};
+
+// ── PARTICLES BACKGROUND ───────────────────────────────────────────────────────
+function ParticleField() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let W = (canvas.width = window.innerWidth);
+    let H = (canvas.height = window.innerHeight);
+    const particles = Array.from({ length: 80 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.5 + 0.5,
+      alpha: Math.random() * 0.4 + 0.1,
+      color: Math.random() > 0.7 ? "#FF6B2B" : "#ffffff",
+    }));
+    let frame;
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = W;
+        if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H;
+        if (p.y > H) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle =
+          p.color +
+          Math.floor(p.alpha * 255)
+            .toString(16)
+            .padStart(2, "0");
+        ctx.fill();
+      });
+      particles.forEach((p, i) => {
+        particles.slice(i + 1).forEach((q) => {
+          const d = Math.hypot(p.x - q.x, p.y - q.y);
+          if (d < 120) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(q.x, q.y);
+            ctx.strokeStyle = `rgba(255,107,43,${0.06 * (1 - d / 120)})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        });
+      });
+      frame = requestAnimationFrame(draw);
+    };
+    draw();
+    const resize = () => {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", resize);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, opacity: 0.6 }} />
+  );
+}
+
+// ── SPECTRUM VISUALIZER ────────────────────────────────────────────────────────
+function SpectrumBar({ active }) {
+  const bars = 24;
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", gap: "2px", height: "32px" }}>
+      {Array.from({ length: bars }, (_, i) => {
+        const h = active ? Math.random() * 28 + 4 : Math.sin((i / bars) * Math.PI) * 14 + 4;
+        return (
+          <div
+            key={i}
+            style={{
+              width: "3px",
+              height: `${h}px`,
+              background: `hsl(${20 + i * 3}, 90%, ${55 + i}%)`,
+              borderRadius: "1px",
+              animation: active ? `bar-dance ${0.3 + Math.random() * 0.4}s ease-in-out infinite alternate` : "none",
+              transition: "height 0.15s ease",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// ── GLOW BUTTON ────────────────────────────────────────────────────────────────
+function GlowButton({ children, onClick, color = "#FF6B2B", active, disabled, style = {} }) {
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      style={{
+        position: "relative",
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+        background: active ? color : "transparent",
+        color: active ? "#000" : color,
+        fontFamily: "'Space Mono', monospace",
+        fontWeight: "700",
+        fontSize: "11px",
+        letterSpacing: "0.1em",
+        padding: "8px 16px",
+        borderRadius: "6px",
+        boxShadow: active ? `0 0 20px ${color}88, 0 0 40px ${color}44` : `inset 0 0 0 1px ${color}44`,
+        transform: pressed ? "scale(0.96)" : "scale(1)",
+        transition: "all 0.15s cubic-bezier(0.4,0,0.2,1)",
+        opacity: disabled ? 0.3 : 1,
+        ...style,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ── CONSOLE STEP CARD ──────────────────────────────────────────────────────────
+function StepCard({ step, index, isActive, total, onClick }) {
+  const color = step.color || "#FF6B2B";
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        position: "relative",
+        cursor: "pointer",
+        background: isActive ? `${color}11` : "rgba(255,255,255,0.02)",
+        border: `1px solid ${isActive ? color : "rgba(255,255,255,0.06)"}`,
+        borderRadius: "10px",
+        padding: "14px 16px",
+        marginBottom: "8px",
+        transform: isActive ? "translateX(4px)" : "translateX(0)",
+        transition: "all 0.35s cubic-bezier(0.4,0,0.2,1)",
+        boxShadow: isActive ? `0 0 24px ${color}33, inset 0 0 24px ${color}08` : "none",
+      }}
+    >
+      {isActive && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: "3px",
+            height: "60%",
+            background: color,
+            borderRadius: "0 2px 2px 0",
+            boxShadow: `0 0 8px ${color}`,
+          }}
+        />
+      )}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div
+          style={{
+            width: "28px",
+            height: "28px",
+            borderRadius: "50%",
+            flexShrink: 0,
+            background: isActive ? color : "rgba(255,255,255,0.06)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "11px",
+            fontWeight: "700",
+            color: isActive ? "#000" : "#555",
+            fontFamily: "'Space Mono', monospace",
+            boxShadow: isActive ? `0 0 12px ${color}88` : "none",
+            transition: "all 0.3s",
+          }}
+        >
+          {index + 1}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: "12px",
+                fontWeight: "700",
+                color: isActive ? color : "#888",
+                background: isActive ? `${color}22` : "transparent",
+                padding: isActive ? "2px 10px" : "2px 0",
+                borderRadius: "4px",
+                transition: "all 0.3s",
+                letterSpacing: "0.05em",
+              }}
+            >
+              {step.button}
+            </span>
+            <span style={{ fontSize: "10px", color: "#444", fontFamily: "'Space Mono', monospace" }}>{step.zone}</span>
+            {isActive && (
+              <span
+                style={{ marginLeft: "auto", fontSize: "10px", color: "#333", fontFamily: "'Space Mono', monospace" }}
+              >
+                {index + 1}/{total}
+              </span>
+            )}
+          </div>
+          {isActive && (
+            <p
+              style={{
+                margin: "8px 0 0",
+                fontSize: "12px",
+                color: "#aaa",
+                lineHeight: "1.6",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              {step.desc}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
-};
+}
 
-export default Index;
+// ── OSC COMMAND CARD ───────────────────────────────────────────────────────────
+function OscCard({ cmd, onSend }) {
+  const [vals, setVals] = useState({});
+  const [fired, setFired] = useState(false);
+
+  const resolvedPath = cmd.path
+    .replace("{a}", vals.a || "…")
+    .replace("{b}", vals.b || "…")
+    .replace("{c}", vals.c || "…");
+
+  const handleSend = () => {
+    onSend(resolvedPath, vals);
+    setFired(true);
+    setTimeout(() => setFired(false), 600);
+  };
+
+  return (
+    <div
+      style={{
+        background: "rgba(255,255,255,0.02)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: "10px",
+        padding: "12px 14px",
+        transition: "border-color 0.2s",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(255,107,43,0.3)")}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")}
+    >
+      <div
+        style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: cmd.params.length ? "10px" : "0" }}
+      >
+        <span
+          style={{
+            fontFamily: "'Space Mono', monospace",
+            fontSize: "11px",
+            fontWeight: "700",
+            color: "#FF6B2B",
+            flex: 1,
+          }}
+        >
+          {cmd.label.toUpperCase()}
+        </span>
+        <button
+          onClick={handleSend}
+          style={{
+            padding: "5px 14px",
+            borderRadius: "5px",
+            border: "none",
+            background: fired ? "#22c55e" : "#FF6B2B",
+            color: "#000",
+            fontFamily: "'Space Mono', monospace",
+            fontSize: "10px",
+            fontWeight: "700",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            boxShadow: fired ? "0 0 12px #22c55e88" : "0 0 8px #FF6B2B44",
+            transform: fired ? "scale(0.95)" : "scale(1)",
+          }}
+        >
+          {fired ? "✓" : "SEND"}
+        </button>
+      </div>
+      {cmd.params.length > 0 && (
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+          {cmd.params.map((p, i) => {
+            const key = ["a", "b", "c"][i];
+            return (
+              <input
+                key={i}
+                value={vals[key] || ""}
+                onChange={(e) => setVals((v) => ({ ...v, [key]: e.target.value }))}
+                placeholder={p}
+                style={{
+                  flex: 1,
+                  minWidth: "60px",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "5px",
+                  padding: "5px 10px",
+                  color: "#ddd",
+                  fontSize: "11px",
+                  fontFamily: "'Space Mono', monospace",
+                  outline: "none",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "#FF6B2B88")}
+                onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+              />
+            );
+          })}
+        </div>
+      )}
+      <div
+        style={{
+          marginTop: "6px",
+          fontSize: "9px",
+          color: "#333",
+          fontFamily: "'Space Mono', monospace",
+          wordBreak: "break-all",
+        }}
+      >
+        {resolvedPath}
+      </div>
+    </div>
+  );
+}
+
+// ── FIXTURE VISUALIZER ─────────────────────────────────────────────────────────
+function FixtureGrid({ channels }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(8, 1fr)",
+        gap: "6px",
+      }}
+    >
+      {channels.map((ch, i) => (
+        <div
+          key={i}
+          title={`Ch ${ch.id}: ${ch.intensity}%`}
+          style={{
+            aspect: "1",
+            borderRadius: "6px",
+            position: "relative",
+            overflow: "hidden",
+            background: `rgba(${Math.floor(ch.r)},${Math.floor(ch.g)},${Math.floor(ch.b)},0.15)`,
+            border: `1px solid rgba(${Math.floor(ch.r)},${Math.floor(ch.g)},${Math.floor(ch.b)},0.4)`,
+            cursor: "pointer",
+            transition: "all 0.3s",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: `${ch.intensity}%`,
+              background: `rgba(${Math.floor(ch.r)},${Math.floor(ch.g)},${Math.floor(ch.b)},0.7)`,
+              transition: "height 0.5s cubic-bezier(0.4,0,0.2,1)",
+              boxShadow:
+                ch.intensity > 0
+                  ? `0 0 10px rgba(${Math.floor(ch.r)},${Math.floor(ch.g)},${Math.floor(ch.b)},0.5)`
+                  : "none",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: "2px",
+              left: 0,
+              right: 0,
+              textAlign: "center",
+              fontSize: "8px",
+              color: "rgba(255,255,255,0.5)",
+              fontFamily: "'Space Mono', monospace",
+            }}
+          >
+            {ch.id}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── CUE STACK ─────────────────────────────────────────────────────────────────
+function CueStack({ cues, activeCue, onGo }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      {cues.map((cue, i) => (
+        <div
+          key={i}
+          onClick={() => onGo(cue)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "8px 12px",
+            borderRadius: "7px",
+            background: activeCue === cue.id ? "rgba(255,107,43,0.15)" : "rgba(255,255,255,0.02)",
+            border: `1px solid ${activeCue === cue.id ? "rgba(255,107,43,0.5)" : "rgba(255,255,255,0.05)"}`,
+            cursor: "pointer",
+            transition: "all 0.2s",
+            boxShadow: activeCue === cue.id ? "0 0 16px rgba(255,107,43,0.2)" : "none",
+          }}
+        >
+          <div
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: activeCue === cue.id ? "#FF6B2B" : "#333",
+              flexShrink: 0,
+              boxShadow: activeCue === cue.id ? "0 0 8px #FF6B2B" : "none",
+            }}
+          />
+          <span
+            style={{
+              fontFamily: "'Space Mono', monospace",
+              fontSize: "11px",
+              color: activeCue === cue.id ? "#FF6B2B" : "#666",
+              width: "36px",
+            }}
+          >
+            {cue.id}
+          </span>
+          <span
+            style={{
+              flex: 1,
+              fontSize: "12px",
+              color: activeCue === cue.id ? "#e0e0e0" : "#555",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            {cue.label}
+          </span>
+          <span style={{ fontSize: "10px", color: "#444", fontFamily: "'Space Mono', monospace" }}>{cue.time}s</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── COMMAND LOG ────────────────────────────────────────────────────────────────
+function CommandLog({ logs, onClear }) {
+  const ref = useRef();
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [logs]);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+        <span
+          style={{ fontSize: "10px", color: "#444", fontFamily: "'Space Mono', monospace", letterSpacing: "0.1em" }}
+        >
+          OSC LOG
+        </span>
+        <button
+          onClick={onClear}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#333",
+            cursor: "pointer",
+            fontSize: "10px",
+            fontFamily: "'Space Mono', monospace",
+          }}
+        >
+          CLEAR
+        </button>
+      </div>
+      <div
+        ref={ref}
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          background: "#050505",
+          borderRadius: "8px",
+          padding: "10px",
+          minHeight: "120px",
+          border: "1px solid rgba(255,255,255,0.04)",
+        }}
+      >
+        {logs.length === 0 && (
+          <span style={{ color: "#1a1a1a", fontSize: "11px", fontFamily: "'Space Mono', monospace" }}>
+            // awaiting commands...
+          </span>
+        )}
+        {logs.map((l, i) => (
+          <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "3px", alignItems: "baseline" }}>
+            <span style={{ color: "#2a2a2a", fontSize: "10px", fontFamily: "'Space Mono', monospace", flexShrink: 0 }}>
+              {l.time}
+            </span>
+            <span style={{ fontSize: "10px", color: "#22c55e", fontFamily: "'Space Mono', monospace", flexShrink: 0 }}>
+              →
+            </span>
+            <span
+              style={{
+                fontSize: "10px",
+                color: "#FF6B2B88",
+                fontFamily: "'Space Mono', monospace",
+                wordBreak: "break-all",
+              }}
+            >
+              {l.path}
+            </span>
+            {l.val && (
+              <span style={{ fontSize: "10px", color: "#3b82f688", fontFamily: "'Space Mono', monospace" }}>
+                [{l.val}]
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── MAIN APP ───────────────────────────────────────────────────────────────────
+export default function App() {
+  const [activeModule, setActiveModule] = useState("guide");
+  const [mounted, setMounted] = useState(false);
+
+  // Guide state
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [selectedConsole, setSelectedConsole] = useState(null);
+  const [pendingPrompt, setPendingPrompt] = useState(null);
+  const [steps, setSteps] = useState(null);
+  const [activeStep, setActiveStep] = useState(0);
+  const [showConsoleSelect, setShowConsoleSelect] = useState(false);
+  const chatRef = useRef();
+
+  // OSC state
+  const [oscHost, setOscHost] = useState("192.168.1.100");
+  const [oscPort, setOscPort] = useState("3032");
+  const [oscTab, setOscTab] = useState("Channels");
+  const [oscLogs, setOscLogs] = useState([]);
+  const [customPath, setCustomPath] = useState("");
+  const [customVal, setCustomVal] = useState("");
+
+  // Live state
+  const [channels, setChannels] = useState(() =>
+    Array.from({ length: 32 }, (_, i) => ({
+      id: i + 1,
+      intensity: Math.random() > 0.6 ? Math.floor(Math.random() * 100) : 0,
+      r: 255,
+      g: 140 + Math.random() * 80,
+      b: 40 + Math.random() * 60,
+    })),
+  );
+  const [cues] = useState([
+    { id: "1", label: "Opening — Warm Wash", time: "3.5" },
+    { id: "2", label: "Scene 2 — Spot DS", time: "2.0" },
+    { id: "3", label: "Transition — Fade to Blue", time: "5.0" },
+    { id: "4", label: "Act 2 — Full Stage", time: "1.5" },
+    { id: "5", label: "Blackout", time: "0.5" },
+    { id: "6", label: "Curtain Call", time: "2.0" },
+  ]);
+  const [activeCue, setActiveCue] = useState(null);
+  const [specActive, setSpecActive] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setMounted(true), 100);
+    // Boot message
+    setTimeout(
+      () =>
+        setMessages([
+          {
+            role: "assistant",
+            text: "ETC Console AI online. I know every button, every workflow, every shortcut across the Eos family. What do you need to do?",
+          },
+        ]),
+      400,
+    );
+    // Animate channels
+    const t = setInterval(() => {
+      setChannels((prev) =>
+        prev.map((ch) => ({
+          ...ch,
+          intensity: ch.intensity > 0 ? Math.max(0, ch.intensity + (Math.random() - 0.5) * 8) : ch.intensity,
+        })),
+      );
+    }, 800);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [messages]);
+
+  const sendOsc = useCallback((path, vals = {}) => {
+    const time = new Date().toLocaleTimeString("en-GB", { hour12: false });
+    setOscLogs((prev) => [...prev.slice(-99), { time, path, val: Object.values(vals).filter(Boolean).join(", ") }]);
+  }, []);
+
+  const handleQuickAction = (action) => {
+    sendOsc(action.path);
+    if (action.label === "GO" && activeCue === null) setActiveCue("1");
+  };
+
+  const fetchSteps = async (prompt, consoleName) => {
+    setLoading(true);
+    setSteps(null);
+    setActiveStep(0);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: `You are an elite ETC lighting console trainer. Return ONLY a valid JSON array, no markdown. Each step: { button, zone, color (hex: #FF6B2B mode, #3B82F6 keypad, #8B5CF6 command, #EF4444 record, #10B981 confirm, #EAB308 soft), desc }. Console: ${consoleName}. 4–8 steps max.`,
+          messages: [{ role: "user", content: `How do I: ${prompt}` }],
+        }),
+      });
+      const data = await res.json();
+      const txt = data.content
+        .map((c) => c.text || "")
+        .join("")
+        .replace(/```json|```/g, "")
+        .trim();
+      setSteps(JSON.parse(txt));
+      setMessages((prev) => [
+        ...prev.filter((m) => m.type !== "loading"),
+        {
+          role: "assistant",
+          text: `Here's your ${consoleName} guide for "${prompt}" — ${JSON.parse(txt).length} steps.`,
+        },
+      ]);
+    } catch {
+      const fallback = [
+        { button: "LIVE", zone: "Mode Keys", color: "#FF6B2B", desc: "Ensure you're in Live mode." },
+        { button: "CUE", zone: "Keypad", color: "#3B82F6", desc: "Press CUE to begin cue command." },
+        { button: "[Number]", zone: "Numeric Keypad", color: "#8B5CF6", desc: "Enter the cue number." },
+        { button: "RECORD", zone: "Record Group", color: "#EF4444", desc: "Press RECORD to capture." },
+        { button: "ENTER", zone: "Keypad", color: "#10B981", desc: "Confirm to save." },
+      ];
+      setSteps(fallback);
+      setMessages((prev) => [
+        ...prev.filter((m) => m.type !== "loading"),
+        {
+          role: "assistant",
+          text: `Guide ready for "${prompt}" on ${consoleName}.`,
+        },
+      ]);
+    }
+    setLoading(false);
+  };
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return;
+    const txt = input.trim();
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", text: txt }]);
+    if (!selectedConsole) {
+      setPendingPrompt(txt);
+      setShowConsoleSelect(true);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "Which console are you on?", type: "console-select" },
+      ]);
+      return;
+    }
+    setMessages((prev) => [...prev, { role: "assistant", text: "Generating guide...", type: "loading" }]);
+    await fetchSteps(txt, selectedConsole.name);
+  };
+
+  const handleConsoleSelect = async (con) => {
+    setSelectedConsole(con);
+    setShowConsoleSelect(false);
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", text: con.name },
+      {
+        role: "assistant",
+        text: `${con.name} locked in. Generating your guide...`,
+        type: "loading",
+      },
+    ]);
+    await fetchSteps(pendingPrompt, con.name);
+    setPendingPrompt(null);
+  };
+
+  // ── RENDER ───────────────────────────────────────────────────────────────────
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#060608",
+        fontFamily: "'DM Sans', sans-serif",
+        color: "#e0e0e0",
+        overflow: "hidden auto",
+      }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        ::-webkit-scrollbar { width: 3px; height: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+        @keyframes bar-dance { from { transform: scaleY(0.4); } to { transform: scaleY(1.2); } }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(255,107,43,0.4); } 70% { box-shadow: 0 0 0 10px rgba(255,107,43,0); } 100% { box-shadow: 0 0 0 0 rgba(255,107,43,0); } }
+        @keyframes shimmer { 0%,100% { opacity:0.5; } 50% { opacity:1; } }
+        .nav-btn { transition: all 0.2s; }
+        .nav-btn:hover { color: #FF6B2B !important; }
+        .msg-in { animation: fadeUp 0.3s ease forwards; }
+      `}</style>
+
+      <ParticleField />
+
+      {/* ── HEADER ── */}
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+          background: "rgba(6,6,8,0.85)",
+          backdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(255,107,43,0.1)",
+          padding: "0 24px",
+          height: "56px",
+          display: "flex",
+          alignItems: "center",
+          gap: "0",
+        }}
+      >
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginRight: "32px" }}>
+          <div
+            style={{
+              width: "34px",
+              height: "34px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, #FF6B2B 0%, #FF3D00 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 0 20px rgba(255,107,43,0.4)",
+              fontSize: "18px",
+              flexShrink: 0,
+            }}
+          >
+            ⚡
+          </div>
+          <div>
+            <div
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontWeight: "700",
+                fontSize: "13px",
+                color: "#fff",
+                letterSpacing: "0.08em",
+              }}
+            >
+              EOS<span style={{ color: "#FF6B2B" }}>AI</span>
+            </div>
+            <div
+              style={{ fontFamily: "'Space Mono', monospace", fontSize: "8px", color: "#444", letterSpacing: "0.15em" }}
+            >
+              CONSOLE INTELLIGENCE
+            </div>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ display: "flex", gap: "4px", flex: 1 }}>
+          {[
+            { id: "guide", label: "AI GUIDE", icon: "◈" },
+            { id: "osc", label: "OSC CONTROL", icon: "⊕" },
+            { id: "live", label: "LIVE STAGE", icon: "◉" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              className="nav-btn"
+              onClick={() => setActiveModule(tab.id)}
+              style={{
+                padding: "6px 16px",
+                borderRadius: "6px",
+                border: "none",
+                background: activeModule === tab.id ? "rgba(255,107,43,0.15)" : "transparent",
+                color: activeModule === tab.id ? "#FF6B2B" : "#555",
+                fontFamily: "'Space Mono', monospace",
+                fontSize: "10px",
+                fontWeight: "700",
+                letterSpacing: "0.08em",
+                cursor: "pointer",
+                boxShadow: activeModule === tab.id ? "inset 0 0 0 1px rgba(255,107,43,0.3)" : "none",
+              }}
+            >
+              <span style={{ marginRight: "6px" }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Status */}
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <SpectrumBar active={specActive} />
+          {selectedConsole && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "4px 12px",
+                borderRadius: "20px",
+                background: "rgba(255,107,43,0.1)",
+                border: "1px solid rgba(255,107,43,0.2)",
+              }}
+            >
+              <div
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "#22c55e",
+                  animation: "pulse-ring 2s infinite",
+                }}
+              />
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#FF6B2B" }}>
+                {selectedConsole.name}
+              </span>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* ── CONTENT ── */}
+      <main
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "24px 20px",
+          opacity: mounted ? 1 : 0,
+          transition: "opacity 0.5s ease",
+        }}
+      >
+        {/* ══ MODULE: AI GUIDE ══ */}
+        {activeModule === "guide" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", alignItems: "start" }}>
+            {/* Chat Panel */}
+            <div
+              style={{
+                background: "rgba(255,255,255,0.015)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "16px",
+                overflow: "hidden",
+                boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
+              }}
+            >
+              {/* Panel Header */}
+              <div
+                style={{
+                  padding: "14px 18px",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  background: "rgba(255,107,43,0.03)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    background: "#22c55e",
+                    boxShadow: "0 0 8px #22c55e",
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "10px",
+                    color: "#666",
+                    letterSpacing: "0.12em",
+                  }}
+                >
+                  AI CONSOLE GUIDE
+                </span>
+                {loading && (
+                  <div style={{ marginLeft: "auto", display: "flex", gap: "3px" }}>
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        style={{
+                          width: "4px",
+                          height: "4px",
+                          borderRadius: "50%",
+                          background: "#FF6B2B",
+                          animation: `shimmer 1s ${i * 0.2}s infinite`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Messages */}
+              <div
+                ref={chatRef}
+                style={{
+                  height: "340px",
+                  overflowY: "auto",
+                  padding: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                {messages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className="msg-in"
+                    style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}
+                  >
+                    <div
+                      style={{
+                        maxWidth: "82%",
+                        background:
+                          msg.role === "user"
+                            ? "linear-gradient(135deg, rgba(255,107,43,0.2), rgba(255,61,0,0.15))"
+                            : "rgba(255,255,255,0.04)",
+                        border: `1px solid ${msg.role === "user" ? "rgba(255,107,43,0.3)" : "rgba(255,255,255,0.06)"}`,
+                        borderRadius: msg.role === "user" ? "14px 14px 3px 14px" : "14px 14px 14px 3px",
+                        padding: "10px 14px",
+                        fontSize: "13px",
+                        lineHeight: "1.6",
+                        color: msg.role === "user" ? "#ffd0b5" : "#bbb",
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      {msg.type === "loading" ? (
+                        <span style={{ color: "#444" }}>
+                          thinking<span style={{ animation: "shimmer 1s infinite" }}>...</span>
+                        </span>
+                      ) : (
+                        msg.text
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Console selector pills */}
+                {showConsoleSelect && (
+                  <div className="msg-in" style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    {CONSOLES.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => handleConsoleSelect(c)}
+                        style={{
+                          padding: "6px 14px",
+                          borderRadius: "20px",
+                          background: "rgba(255,107,43,0.08)",
+                          border: "1px solid rgba(255,107,43,0.3)",
+                          color: "#FF6B2B",
+                          fontFamily: "'Space Mono', monospace",
+                          fontSize: "11px",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                        }}
+                        onMouseOver={(e) => {
+                          e.target.style.background = "rgba(255,107,43,0.2)";
+                          e.target.style.transform = "scale(1.05)";
+                        }}
+                        onMouseOut={(e) => {
+                          e.target.style.background = "rgba(255,107,43,0.08)";
+                          e.target.style.transform = "scale(1)";
+                        }}
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Console badge */}
+              {selectedConsole && (
+                <div
+                  style={{
+                    padding: "8px 18px",
+                    borderTop: "1px solid rgba(255,255,255,0.03)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    background: "rgba(0,0,0,0.2)",
+                  }}
+                >
+                  <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#22c55e" }} />
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#555" }}>
+                    CONSOLE: <span style={{ color: selectedConsole.color }}>{selectedConsole.name.toUpperCase()}</span>
+                  </span>
+                  <button
+                    onClick={() => {
+                      setSelectedConsole(null);
+                      setShowConsoleSelect(false);
+                    }}
+                    style={{
+                      marginLeft: "auto",
+                      background: "none",
+                      border: "none",
+                      color: "#333",
+                      cursor: "pointer",
+                      fontSize: "10px",
+                      fontFamily: "'Space Mono', monospace",
+                    }}
+                  >
+                    CHANGE
+                  </button>
+                </div>
+              )}
+
+              {/* Input */}
+              <div
+                style={{
+                  padding: "14px 16px",
+                  borderTop: "1px solid rgba(255,255,255,0.04)",
+                  display: "flex",
+                  gap: "8px",
+                }}
+              >
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                  placeholder="e.g. How do I build an effects chase?"
+                  disabled={loading}
+                  style={{
+                    flex: 1,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "8px",
+                    padding: "10px 14px",
+                    color: "#e0e0e0",
+                    fontSize: "13px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    outline: "none",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "rgba(255,107,43,0.4)")}
+                  onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={loading || !input.trim()}
+                  style={{
+                    width: "42px",
+                    borderRadius: "8px",
+                    border: "none",
+                    background:
+                      loading || !input.trim() ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, #FF6B2B, #FF3D00)",
+                    color: loading || !input.trim() ? "#333" : "#fff",
+                    cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+                    fontSize: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s",
+                    boxShadow: !loading && input.trim() ? "0 0 16px rgba(255,107,43,0.4)" : "none",
+                  }}
+                >
+                  →
+                </button>
+              </div>
+            </div>
+
+            {/* Steps Panel */}
+            <div
+              style={{
+                background: "rgba(255,255,255,0.015)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "16px",
+                overflow: "hidden",
+                boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
+              }}
+            >
+              <div
+                style={{
+                  padding: "14px 18px",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  background: "rgba(255,107,43,0.03)",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "10px",
+                    color: "#666",
+                    letterSpacing: "0.12em",
+                    flex: 1,
+                  }}
+                >
+                  BUTTON SEQUENCE
+                </span>
+                {steps && (
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#444" }}>
+                    {activeStep + 1} / {steps.length}
+                  </span>
+                )}
+              </div>
+
+              <div style={{ padding: "16px", minHeight: "340px" }}>
+                {!steps && (
+                  <div
+                    style={{
+                      height: "300px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "12px",
+                      color: "#1e1e1e",
+                    }}
+                  >
+                    <div style={{ fontSize: "48px", opacity: 0.3 }}>◈</div>
+                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", letterSpacing: "0.1em" }}>
+                      ASK ANYTHING TO BEGIN
+                    </div>
+                  </div>
+                )}
+                {steps && (
+                  <div style={{ overflowY: "auto", maxHeight: "300px" }}>
+                    {steps.map((s, i) => (
+                      <StepCard
+                        key={i}
+                        step={s}
+                        index={i}
+                        isActive={activeStep === i}
+                        total={steps.length}
+                        onClick={() => setActiveStep(i)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {steps && (
+                <div
+                  style={{
+                    padding: "14px 16px",
+                    borderTop: "1px solid rgba(255,255,255,0.04)",
+                    display: "flex",
+                    gap: "8px",
+                  }}
+                >
+                  <GlowButton
+                    onClick={() => setActiveStep((s) => Math.max(0, s - 1))}
+                    disabled={activeStep === 0}
+                    style={{ flex: 1 }}
+                  >
+                    ← PREV
+                  </GlowButton>
+                  <GlowButton
+                    onClick={() => setActiveStep((s) => Math.min(steps.length - 1, s + 1))}
+                    disabled={activeStep === steps.length - 1}
+                    active
+                    style={{ flex: 1 }}
+                  >
+                    NEXT →
+                  </GlowButton>
+                </div>
+              )}
+            </div>
+
+            {/* Suggested prompts */}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div
+                style={{
+                  fontSize: "10px",
+                  color: "#2a2a2a",
+                  fontFamily: "'Space Mono', monospace",
+                  letterSpacing: "0.1em",
+                  marginBottom: "10px",
+                }}
+              >
+                SUGGESTED TASKS
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {[
+                  "Record a cue with fade time",
+                  "Create a colour chase effect",
+                  "Patch a moving head fixture",
+                  "Set up submaster faders",
+                  "Record a group of channels",
+                  "Apply a focus palette",
+                  "Build an effects sequence",
+                  "Configure MIDI triggers",
+                ].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setInput(s);
+                    }}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "20px",
+                      background: "transparent",
+                      border: "1px solid rgba(255,255,255,0.07)",
+                      color: "#444",
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.borderColor = "rgba(255,107,43,0.4)";
+                      e.target.style.color = "#FF6B2B";
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.borderColor = "rgba(255,255,255,0.07)";
+                      e.target.style.color = "#444";
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══ MODULE: OSC CONTROL ══ */}
+        {activeModule === "osc" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Connection Bar */}
+            <div
+              style={{
+                background: "rgba(255,255,255,0.015)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "12px",
+                padding: "14px 20px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  background: "#22c55e",
+                  boxShadow: "0 0 8px #22c55e",
+                  animation: "pulse-ring 2s infinite",
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: "10px",
+                  color: "#444",
+                  letterSpacing: "0.1em",
+                }}
+              >
+                TARGET
+              </span>
+              {[
+                { val: oscHost, set: setOscHost, placeholder: "Console IP", width: "150px" },
+                { val: oscPort, set: setOscPort, placeholder: "3032", width: "70px" },
+              ].map((f, i) => (
+                <input
+                  key={i}
+                  value={f.val}
+                  onChange={(e) => f.set(e.target.value)}
+                  placeholder={f.placeholder}
+                  style={{
+                    width: f.width,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "6px",
+                    padding: "6px 12px",
+                    color: "#ddd",
+                    fontSize: "12px",
+                    fontFamily: "'Space Mono', monospace",
+                    outline: "none",
+                  }}
+                />
+              ))}
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#2a2a2a" }}>
+                UDP OSC — {oscHost}:{oscPort}
+              </span>
+
+              {/* Quick Actions */}
+              <div style={{ marginLeft: "auto", display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                {QUICK_ACTIONS.map((a) => (
+                  <button
+                    key={a.label}
+                    onClick={() => {
+                      sendOsc(a.path);
+                      setSpecActive(true);
+                      setTimeout(() => setSpecActive(false), 300);
+                    }}
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: "5px",
+                      border: `1px solid ${a.color}44`,
+                      background: `${a.color}11`,
+                      color: a.color,
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: "10px",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                      letterSpacing: "0.05em",
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = `${a.color}33`;
+                      e.currentTarget.style.boxShadow = `0 0 12px ${a.color}44`;
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = `${a.color}11`;
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px" }}>
+              {/* Command Tabs */}
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.015)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Tab Bar */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "2px",
+                    padding: "10px 10px 0",
+                    borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    overflowX: "auto",
+                  }}
+                >
+                  {OSC_TABS.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setOscTab(t)}
+                      style={{
+                        padding: "7px 14px",
+                        borderRadius: "8px 8px 0 0",
+                        border: "none",
+                        borderBottom: oscTab === t ? "2px solid #FF6B2B" : "2px solid transparent",
+                        background: oscTab === t ? "rgba(255,107,43,0.1)" : "transparent",
+                        color: oscTab === t ? "#FF6B2B" : "#444",
+                        fontFamily: "'Space Mono', monospace",
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        transition: "all 0.2s",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {t.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Commands Grid */}
+                <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {OSC_COMMANDS[oscTab].map((cmd, i) => (
+                    <OscCard key={i} cmd={cmd} onSend={sendOsc} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                {/* Custom OSC */}
+                <div
+                  style={{
+                    background: "rgba(255,255,255,0.015)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: "14px",
+                    padding: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      color: "#444",
+                      fontFamily: "'Space Mono', monospace",
+                      letterSpacing: "0.1em",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    CUSTOM COMMAND
+                  </div>
+                  <input
+                    value={customPath}
+                    onChange={(e) => setCustomPath(e.target.value)}
+                    placeholder="/eos/chan/1/param/intensity"
+                    style={{
+                      width: "100%",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "7px",
+                      padding: "9px 12px",
+                      color: "#ddd",
+                      fontSize: "12px",
+                      fontFamily: "'Space Mono', monospace",
+                      outline: "none",
+                      marginBottom: "8px",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = "rgba(255,107,43,0.4)")}
+                    onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
+                  />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <input
+                      value={customVal}
+                      onChange={(e) => setCustomVal(e.target.value)}
+                      placeholder="value (optional)"
+                      onKeyDown={(e) => e.key === "Enter" && customPath && sendOsc(customPath, { a: customVal })}
+                      style={{
+                        flex: 1,
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: "7px",
+                        padding: "9px 12px",
+                        color: "#ddd",
+                        fontSize: "12px",
+                        fontFamily: "'Space Mono', monospace",
+                        outline: "none",
+                      }}
+                      onFocus={(e) => (e.target.style.borderColor = "rgba(255,107,43,0.4)")}
+                      onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
+                    />
+                    <GlowButton
+                      onClick={() => {
+                        if (customPath) {
+                          sendOsc(customPath, { a: customVal });
+                          setCustomPath("");
+                          setCustomVal("");
+                        }
+                      }}
+                      active
+                      style={{ flexShrink: 0 }}
+                    >
+                      SEND
+                    </GlowButton>
+                  </div>
+                </div>
+
+                {/* Log */}
+                <div
+                  style={{
+                    flex: 1,
+                    background: "rgba(255,255,255,0.015)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: "14px",
+                    padding: "16px",
+                    minHeight: "200px",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <CommandLog logs={oscLogs} onClear={() => setOscLogs([])} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══ MODULE: LIVE STAGE ══ */}
+        {activeModule === "live" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            {/* Channel Grid */}
+            <div
+              style={{
+                background: "rgba(255,255,255,0.015)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "16px",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  padding: "14px 18px",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: "#FF6B2B",
+                    animation: "pulse-ring 1.5s infinite",
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "10px",
+                    color: "#666",
+                    letterSpacing: "0.12em",
+                    flex: 1,
+                  }}
+                >
+                  CHANNEL OVERVIEW — 32 CHANNELS
+                </span>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#444" }}>
+                  {channels.filter((c) => c.intensity > 0).length} ACTIVE
+                </span>
+              </div>
+              <div style={{ padding: "20px" }}>
+                <FixtureGrid channels={channels} />
+              </div>
+              <div
+                style={{
+                  padding: "14px 18px",
+                  borderTop: "1px solid rgba(255,255,255,0.04)",
+                  display: "flex",
+                  gap: "8px",
+                }}
+              >
+                <GlowButton
+                  onClick={() => setChannels((prev) => prev.map((c) => ({ ...c, intensity: 100 })))}
+                  active
+                  style={{ flex: 1 }}
+                >
+                  FULL STAGE
+                </GlowButton>
+                <GlowButton
+                  onClick={() => setChannels((prev) => prev.map((c) => ({ ...c, intensity: 0 })))}
+                  color="#ef4444"
+                  style={{ flex: 1 }}
+                >
+                  BLACKOUT
+                </GlowButton>
+                <GlowButton
+                  onClick={() =>
+                    setChannels((prev) =>
+                      prev.map((c) => ({ ...c, intensity: Math.random() > 0.4 ? Math.floor(Math.random() * 100) : 0 })),
+                    )
+                  }
+                  color="#8b5cf6"
+                  style={{ flex: 1 }}
+                >
+                  RANDOM
+                </GlowButton>
+              </div>
+            </div>
+
+            {/* Cue Stack */}
+            <div
+              style={{
+                background: "rgba(255,255,255,0.015)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "16px",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  padding: "14px 18px",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "10px",
+                    color: "#666",
+                    letterSpacing: "0.12em",
+                    flex: 1,
+                  }}
+                >
+                  CUE STACK
+                </span>
+                {activeCue && (
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#FF6B2B" }}>
+                    CUE {activeCue} ACTIVE
+                  </span>
+                )}
+              </div>
+              <div style={{ padding: "14px" }}>
+                <CueStack
+                  cues={cues}
+                  activeCue={activeCue}
+                  onGo={(cue) => {
+                    setActiveCue(cue.id);
+                    sendOsc(`/eos/cue/${cue.id}/fire`);
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  padding: "14px 18px",
+                  borderTop: "1px solid rgba(255,255,255,0.04)",
+                  display: "flex",
+                  gap: "8px",
+                }}
+              >
+                <GlowButton
+                  onClick={() => {
+                    const idx = cues.findIndex((c) => c.id === activeCue);
+                    if (idx < cues.length - 1) {
+                      setActiveCue(cues[idx + 1].id);
+                      sendOsc("/eos/cue/go");
+                    }
+                  }}
+                  active
+                  style={{ flex: 1 }}
+                >
+                  ▶ GO
+                </GlowButton>
+                <GlowButton
+                  onClick={() => {
+                    const idx = cues.findIndex((c) => c.id === activeCue);
+                    if (idx > 0) {
+                      setActiveCue(cues[idx - 1].id);
+                      sendOsc("/eos/cue/back");
+                    }
+                  }}
+                  color="#3b82f6"
+                  style={{ flex: 1 }}
+                >
+                  ◀ BACK
+                </GlowButton>
+              </div>
+            </div>
+
+            {/* Master Faders */}
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                background: "rgba(255,255,255,0.015)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "16px",
+                padding: "20px",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: "10px",
+                  color: "#444",
+                  letterSpacing: "0.12em",
+                  marginBottom: "16px",
+                }}
+              >
+                SUBMASTER FADERS
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: "12px" }}>
+                {["Wash", "Spot", "Fill", "Back", "Effects", "Practicals", "Haze", "Master"].map((label, i) => {
+                  const [val, setVal] = useState(i === 7 ? 100 : Math.floor(Math.random() * 80 + 10));
+                  return (
+                    <div
+                      key={label}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}
+                    >
+                      <div
+                        style={{
+                          height: "100px",
+                          width: "28px",
+                          background: "rgba(255,255,255,0.04)",
+                          borderRadius: "14px",
+                          position: "relative",
+                          cursor: "pointer",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          overflow: "hidden",
+                        }}
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const newVal = Math.round((1 - (e.clientY - rect.top) / rect.height) * 100);
+                          setVal(Math.max(0, Math.min(100, newVal)));
+                          sendOsc(`/eos/sub/${i + 1}`, { a: newVal });
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: `${val}%`,
+                            background:
+                              i === 7
+                                ? "linear-gradient(to top, #FF6B2B, #FF3D00)"
+                                : `linear-gradient(to top, hsl(${20 + i * 15}, 80%, 50%), hsl(${30 + i * 15}, 90%, 60%))`,
+                            transition: "height 0.1s",
+                            boxShadow: val > 0 ? `0 0 10px rgba(255,107,43,0.3)` : "none",
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: `${val}%`,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            width: "24px",
+                            height: "8px",
+                            background: "#333",
+                            borderRadius: "2px",
+                            border: "1px solid #555",
+                          }}
+                        />
+                      </div>
+                      <span
+                        style={{
+                          fontFamily: "'Space Mono', monospace",
+                          fontSize: "9px",
+                          color: "#444",
+                          textAlign: "center",
+                        }}
+                      >
+                        {label.toUpperCase()}
+                      </span>
+                      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#FF6B2B" }}>
+                        {val}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* ── FOOTER ── */}
+      <footer
+        style={{
+          textAlign: "center",
+          padding: "24px",
+          marginTop: "20px",
+          borderTop: "1px solid rgba(255,255,255,0.03)",
+        }}
+      >
+        <div
+          style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", color: "#1e1e1e", letterSpacing: "0.2em" }}
+        >
+          EOS AI CONSOLE INTELLIGENCE — BUILT WITH ⚡ FOR THE LIGHTING COMMUNITY
+        </div>
+      </footer>
+    </div>
+  );
+}
