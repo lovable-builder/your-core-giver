@@ -1,6 +1,7 @@
 // Update this page (the content is just a fallback if you fail to update the page)
 import { useState, useEffect, useRef, useCallback } from "react";
 import FixtureLibrary from "@/components/FixtureLibrary";
+import ConsoleButton from "@/components/ConsoleButton";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const CONSOLES = [
