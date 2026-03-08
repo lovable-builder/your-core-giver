@@ -55,13 +55,25 @@ interface PatchEntry {
   label: string;
 }
 
+// ── Console Patch Entry (from import) ────────────────────────────────────────
+interface ConsolePatchEntry {
+  channel: number;
+  universe: number;
+  address: number;
+  fixture?: string;
+  label?: string;
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 interface FixtureLibraryProps {
   onPatch: (path: string, value?: string | number | null) => void;
+  onRequestPatch?: () => void;
+  consolePatch?: ConsolePatchEntry[];
+  wsConnected?: boolean;
 }
 
-export default function FixtureLibrary({ onPatch }: FixtureLibraryProps) {
+export default function FixtureLibrary({ onPatch, onRequestPatch, consolePatch = [], wsConnected = false }: FixtureLibraryProps) {
   // Search / filter
   const [search, setSearch] = useState("");
   const [filterManufacturer, setFilterManufacturer] = useState("All");

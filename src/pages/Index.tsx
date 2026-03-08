@@ -1922,7 +1922,12 @@ export default function App() {
 
         {/* ══ MODULE: FIXTURES ══ */}
         {activeModule === "fixtures" && (
-          <FixtureLibrary onPatch={sendOsc} />
+          <FixtureLibrary
+            onPatch={sendOsc}
+            onRequestPatch={() => sendBridgeMessage({ type: "request_patch" })}
+            consolePatch={consolePatch}
+            wsConnected={wsConnected}
+          />
         )}
 
         {/* ══ MODULE: LIVE STAGE ══ */}
