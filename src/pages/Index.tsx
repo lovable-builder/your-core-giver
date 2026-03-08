@@ -2346,7 +2346,7 @@ export default function App() {
                     if (idx > 0) {
                       const prevCue = cues[idx - 1];
                       setActiveCue(prevCue.id);
-                      sendOsc("/eos/newcmd", `Cue ${prevCue.id} Go Enter`);
+                      sendOsc(`/eos/cue/${prevCue.id}/fire`);
                     }
                   }}
                   color="#3b82f6"
