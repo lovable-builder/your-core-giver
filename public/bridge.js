@@ -267,7 +267,7 @@ wss.on("connection", (ws, req) => {
       }
 
       let oscMsg;
-      if (Array.isArray(rawArgs)) {
+      if (Array.isArray(rawArgs) && rawArgs.length > 0) {
         oscMsg = { address: withUserPath(path), args: rawArgs };
       } else {
         oscMsg = parseEosCommand(path, value);
