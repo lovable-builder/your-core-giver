@@ -660,7 +660,7 @@ export default function App() {
 
   // OSC state
   const [oscHost, setOscHost] = useState("192.168.1.100");
-  const [oscPort, setOscPort] = useState("3032");
+  const [oscPort, setOscPort] = useState("3033");
   const [oscTab, setOscTab] = useState("Channels");
   const [oscLogs, setOscLogs] = useState([]);
   const [customPath, setCustomPath] = useState("");
@@ -1673,7 +1673,7 @@ export default function App() {
               </span>
               {[
                 { val: oscHost, set: setOscHost, placeholder: "Console IP", width: "150px" },
-                { val: oscPort, set: setOscPort, placeholder: "3032", width: "70px" },
+                { val: oscPort, set: setOscPort, placeholder: "3033", width: "70px" },
               ].map((f, i) => (
                 <input
                   key={i}

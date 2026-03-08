@@ -234,7 +234,7 @@ wss.on("connection", (ws, req) => {
       const msg = JSON.parse(raw.toString());
 
       const host = msg.host || "127.0.0.1";
-      const port = parseInt(msg.port || "3032", 10);
+      const port = parseInt(msg.port || "3033", 10);
 
       // Poll-style request APIs from app
       if (msg.type === "ping") {
