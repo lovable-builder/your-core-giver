@@ -994,12 +994,12 @@ export default function App() {
     setOscLogs((prev) => [...prev.slice(-99), { time, path, val: displayVal }]);
 
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      // For /eos/newcmd commands: embed command string in the OSC address path
-      // EOS expects: /eos/newcmd/Cue 3 Go Enter (command in path, no args)
+      // For /eos/newcmd commands: send as /eos/newcmd with command string as typed arg
+      // Bridge will forward to EOS as /eos/user/X/newcmd + string argument
       if (path === "/eos/newcmd" && typeof value === "string" && value.length > 0) {
         wsRef.current.send(JSON.stringify({
-          path: `/eos/newcmd/${value}`,
-          args: [],
+          path: "/eos/newcmd",
+          args: [{ type: "s", value }],
           host: oscHost,
           port: parseInt(oscPort, 10),
         }));
