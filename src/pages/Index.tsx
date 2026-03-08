@@ -687,7 +687,8 @@ export default function App() {
   const [customVal, setCustomVal] = useState("");
 
   // WebSocket bridge state
-  const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8080";
+  const [bridgeUrl, setBridgeUrl] = useState(() => localStorage.getItem("eos_bridge_url") || import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8080");
+  const BRIDGE_URL = bridgeUrl;
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
