@@ -1661,6 +1661,11 @@ export default function App() {
           </div>
         )}
 
+        {/* ══ MODULE: FIXTURES ══ */}
+        {activeModule === "fixtures" && (
+          <FixtureLibrary onPatch={sendOsc} />
+        )}
+
         {/* ══ MODULE: LIVE STAGE ══ */}
         {activeModule === "live" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
