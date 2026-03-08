@@ -685,6 +685,16 @@ export default function App() {
   const [oscLogs, setOscLogs] = useState([]);
   const [customPath, setCustomPath] = useState("");
   const [customVal, setCustomVal] = useState("");
+  
+  // AI OSC state
+  const [aiOscInput, setAiOscInput] = useState("");
+  const [aiOscLoading, setAiOscLoading] = useState(false);
+  const [aiOscHistory, setAiOscHistory] = useState<Array<{
+    role: "user" | "assistant";
+    text: string;
+    commands?: Array<{ path: string; value?: string; description: string }>;
+  }>>([]);
+  const [aiOscPreviewMode, setAiOscPreviewMode] = useState(false);
 
   // WebSocket bridge state
   const [bridgeUrl, setBridgeUrl] = useState(() => localStorage.getItem("eos_bridge_url") || import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8080");
