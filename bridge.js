@@ -256,25 +256,23 @@ wss.on("connection", (ws, req) => {
       }
 
       if (msg.type === "request_levels") {
-        udpPort.send({ address: withUserPath("/eos/get/chans/1/512"), args: [] }, host, port);
+        // GET requests: do NOT use withUserPath — EOS GET endpoints are global
+        udpPort.send({ address: "/eos/get/chans/1/512", args: [] }, host, port);
         ws.send(JSON.stringify({ ok: true, type: "request_levels" }));
         return;
       }
 
       if (msg.type === "request_patch") {
-        udpPort.send({ address: withUserPath("/eos/get/patch/count"), args: [] }, host, port);
-        udpPort.send({ address: withUserPath("/eos/get/patch/1/512"), args: [] }, host, port);
+        udpPort.send({ address: "/eos/get/patch/count", args: [] }, host, port);
+        udpPort.send({ address: "/eos/get/patch/1/512", args: [] }, host, port);
         ws.send(JSON.stringify({ ok: true, type: "request_patch" }));
         return;
       }
 
       if (msg.type === "request_cues") {
         const cueList = msg.cueList || "1";
-        // Request cue count first, then list indices 0-99
-        udpPort.send({ address: withUserPath(`/eos/get/cue/${cueList}/count`), args: [] }, host, port);
-        for (let i = 0; i < 100; i++) {
-          udpPort.send({ address: withUserPath(`/eos/get/cue/${cueList}/${i}`), args: [] }, host, port);
-        }
+        // Only request count — do NOT flood 100 individual cue GETs
+        udpPort.send({ address: `/eos/get/cue/${cueList}/count`, args: [] }, host, port);
         ws.send(JSON.stringify({ ok: true, type: "request_cues" }));
         return;
       }
