@@ -1316,12 +1316,12 @@ export default function App() {
                       transition: "all 0.2s",
                     }}
                     onMouseOver={(e) => {
-                      e.target.style.borderColor = "rgba(255,107,43,0.4)";
-                      e.target.style.color = "#FF6B2B";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,107,43,0.4)";
+                      (e.currentTarget as HTMLElement).style.color = "#FF6B2B";
                     }}
                     onMouseOut={(e) => {
-                      e.target.style.borderColor = "rgba(255,255,255,0.07)";
-                      e.target.style.color = "#444";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
+                      (e.currentTarget as HTMLElement).style.color = "#444";
                     }}
                   >
                     {s}
