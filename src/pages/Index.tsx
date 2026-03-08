@@ -828,6 +828,30 @@ export default function App() {
     };
   }, [BRIDGE_URL, handleBridgeMessage]);
 
+  // Polling fallback: continuously request console state while connected
+  useEffect(() => {
+    if (!wsConnected) return;
+
+    // Prime immediate fetch
+    sendBridgeMessage({ type: "ping" });
+    sendBridgeMessage({ type: "request_levels" });
+    sendBridgeMessage({ type: "request_patch" });
+
+    const fastPoll = setInterval(() => {
+      sendBridgeMessage({ type: "ping" });
+      sendBridgeMessage({ type: "request_levels" });
+    }, 3000);
+
+    const slowPoll = setInterval(() => {
+      sendBridgeMessage({ type: "request_patch" });
+    }, 15000);
+
+    return () => {
+      clearInterval(fastPoll);
+      clearInterval(slowPoll);
+    };
+  }, [wsConnected, sendBridgeMessage]);
+
   // Live state
   const [channels, setChannels] = useState(() =>
     Array.from({ length: 32 }, (_, i) => ({
