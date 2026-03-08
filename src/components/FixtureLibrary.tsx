@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { FIXTURES, MANUFACTURERS, FIXTURE_CATEGORIES, type Fixture, type FixtureMode } from "@/data/fixtures";
 
 // ── Styles (matching the app's aesthetic) ────────────────────────────────────
@@ -55,13 +55,25 @@ interface PatchEntry {
   label: string;
 }
 
+// ── Console Patch Entry (from import) ────────────────────────────────────────
+interface ConsolePatchEntry {
+  channel: number;
+  universe: number;
+  address: number;
+  fixture?: string;
+  label?: string;
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 interface FixtureLibraryProps {
   onPatch: (path: string, value?: string | number | null) => void;
+  onRequestPatch?: () => void;
+  consolePatch?: ConsolePatchEntry[];
+  wsConnected?: boolean;
 }
 
-export default function FixtureLibrary({ onPatch }: FixtureLibraryProps) {
+export default function FixtureLibrary({ onPatch, onRequestPatch, consolePatch = [], wsConnected = false }: FixtureLibraryProps) {
   // Search / filter
   const [search, setSearch] = useState("");
   const [filterManufacturer, setFilterManufacturer] = useState("All");
@@ -188,8 +200,95 @@ export default function FixtureLibrary({ onPatch }: FixtureLibraryProps) {
     return Math.max(...patchList.map((p) => p.startChannel)) + 1;
   }, [patchList]);
 
+  // Import patch from console — creates generic PatchEntry rows from console data
+  const handleImportPatch = () => {
+    if (!onRequestPatch) return;
+    // Clear existing patch list and request fresh data
+    setPatchList([]);
+    onRequestPatch();
+  };
+
+  // When consolePatch updates and patchList is empty (after import request), populate it
+  const [importRequested, setImportRequested] = useState(false);
+
+  const doImport = () => {
+    setImportRequested(true);
+    setPatchList([]);
+    if (onRequestPatch) onRequestPatch();
+  };
+
+  // Effect: when consolePatch arrives after import request, populate patchList
+  useEffect(() => {
+    if (!importRequested || consolePatch.length === 0) return;
+    setImportRequested(false);
+    const genericFixture: Fixture = {
+      id: "imported",
+      manufacturer: "Console",
+      model: "Imported",
+      category: "Wash" as const,
+      description: "Imported from console patch",
+      modes: [{ name: "Imported", channels: 1, channelMap: ["Intensity"] }],
+    };
+
+    const imported: PatchEntry[] = consolePatch.map((p, i) => ({
+      id: `import-${Date.now()}-${i}`,
+      fixture: { ...genericFixture, model: p.fixture || "Unknown" },
+      mode: { name: "Imported", channels: 1, channelMap: ["—"] },
+      startChannel: p.channel,
+      universe: p.universe || 1,
+      dmxAddress: p.address || 1,
+      quantity: 1,
+      label: p.label || `Ch ${p.channel}`,
+    }));
+
+    setPatchList(imported);
+  }, [importRequested, consolePatch]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* ── Import Patch Button ── */}
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button
+          onClick={doImport}
+          disabled={!wsConnected}
+          style={{
+            flex: 1,
+            padding: "10px 16px",
+            borderRadius: "8px",
+            border: "1px solid rgba(139,92,246,0.3)",
+            background: wsConnected ? "rgba(139,92,246,0.15)" : "rgba(255,255,255,0.03)",
+            color: wsConnected ? "#a78bfa" : "#444",
+            fontFamily: "'Space Mono', monospace",
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "0.08em",
+            cursor: wsConnected ? "pointer" : "not-allowed",
+            transition: "all 0.2s",
+          }}
+        >
+          📋 IMPORT PATCH FROM CONSOLE
+        </button>
+        {patchList.length > 0 && (
+          <button
+            onClick={() => setPatchList([])}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "8px",
+              border: "1px solid rgba(239,68,68,0.3)",
+              background: "rgba(239,68,68,0.1)",
+              color: "#ef4444",
+              fontFamily: "'Space Mono', monospace",
+              fontSize: "11px",
+              fontWeight: "700",
+              letterSpacing: "0.08em",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            CLEAR
+          </button>
+        )}
+      </div>
       {/* ── Search & Filter Bar ── */}
       <div
         style={{
