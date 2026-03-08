@@ -660,7 +660,7 @@ export default function App() {
 
   // OSC state
   const [oscHost, setOscHost] = useState("192.168.1.100");
-  const [oscPort, setOscPort] = useState("3032");
+  const [oscPort, setOscPort] = useState("3033");
   const [oscTab, setOscTab] = useState("Channels");
   const [oscLogs, setOscLogs] = useState([]);
   const [customPath, setCustomPath] = useState("");
