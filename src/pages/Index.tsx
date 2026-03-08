@@ -687,7 +687,8 @@ export default function App() {
   const [customVal, setCustomVal] = useState("");
 
   // WebSocket bridge state
-  const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8080";
+  const [bridgeUrl, setBridgeUrl] = useState(() => localStorage.getItem("eos_bridge_url") || import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8080");
+  const BRIDGE_URL = bridgeUrl;
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
@@ -1732,6 +1733,22 @@ export default function App() {
               >
                 TARGET
               </span>
+              <input
+                value={bridgeUrl}
+                onChange={(e) => setBridgeUrl(e.target.value)}
+                placeholder="ws://localhost:8080"
+                style={{
+                  width: "200px",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "6px",
+                  padding: "6px 12px",
+                  color: "#ddd",
+                  fontSize: "12px",
+                  fontFamily: "'Space Mono', monospace",
+                  outline: "none",
+                }}
+              />
               {[
                 { val: oscHost, set: setOscHost, placeholder: "Console IP", width: "150px" },
                 { val: oscPort, set: setOscPort, placeholder: "3033", width: "70px" },
@@ -1754,8 +1771,31 @@ export default function App() {
                   }}
                 />
               ))}
+              <button
+                onClick={() => {
+                  localStorage.setItem("eos_osc_host", oscHost);
+                  localStorage.setItem("eos_osc_port", oscPort);
+                  localStorage.setItem("eos_bridge_url", bridgeUrl);
+                  // Reconnect WebSocket with new bridge URL
+                  if (wsRef.current) { wsRef.current.close(); }
+                }}
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: "#FF6B2B",
+                  color: "#000",
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: "10px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  letterSpacing: "0.1em",
+                }}
+              >
+                SAVE
+              </button>
               <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#2a2a2a" }}>
-                UDP OSC — {oscHost}:{oscPort}
+                Bridge: {bridgeUrl} → {oscHost}:{oscPort}
               </span>
 
               {/* Quick Actions */}
