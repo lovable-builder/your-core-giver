@@ -1673,7 +1673,7 @@ export default function App() {
               </span>
               {[
                 { val: oscHost, set: setOscHost, placeholder: "Console IP", width: "150px" },
-                { val: oscPort, set: setOscPort, placeholder: "3032", width: "70px" },
+                { val: oscPort, set: setOscPort, placeholder: "3033", width: "70px" },
               ].map((f, i) => (
                 <input
                   key={i}
