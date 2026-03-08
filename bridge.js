@@ -198,10 +198,20 @@ wss.on("connection", (ws, req) => {
       }
 
       if (msg.type === "request_patch") {
-        // Different EOS versions expose patch data differently; issue a couple of common gets.
         udpPort.send({ address: withUserPath("/eos/get/patch/count"), args: [] }, host, port);
         udpPort.send({ address: withUserPath("/eos/get/patch/1/512"), args: [] }, host, port);
         ws.send(JSON.stringify({ ok: true, type: "request_patch" }));
+        return;
+      }
+
+      if (msg.type === "request_cues") {
+        const cueList = msg.cueList || "1";
+        // Request cue count first, then list indices 0-99
+        udpPort.send({ address: withUserPath(`/eos/get/cue/${cueList}/count`), args: [] }, host, port);
+        for (let i = 0; i < 100; i++) {
+          udpPort.send({ address: withUserPath(`/eos/get/cue/${cueList}/${i}`), args: [] }, host, port);
+        }
+        ws.send(JSON.stringify({ ok: true, type: "request_cues" }));
         return;
       }
 
