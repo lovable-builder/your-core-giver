@@ -1780,7 +1780,8 @@ export default function App() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: "12px" }}>
                 {["Wash", "Spot", "Fill", "Back", "Effects", "Practicals", "Haze", "Master"].map((label, i) => {
-                  const [val, setVal] = useState(i === 7 ? 100 : Math.floor(Math.random() * 80 + 10));
+                  const val = faderVals[i];
+                  const setVal = (newVal: number) => setFaderVals(prev => prev.map((v, j) => j === i ? newVal : v));
                   return (
                     <div
                       key={label}
