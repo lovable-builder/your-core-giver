@@ -1069,12 +1069,12 @@ export default function App() {
                           transition: "all 0.2s",
                         }}
                         onMouseOver={(e) => {
-                          e.target.style.background = "rgba(255,107,43,0.2)";
-                          e.target.style.transform = "scale(1.05)";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.2)";
+                          (e.currentTarget as HTMLElement).style.transform = "scale(1.05)";
                         }}
                         onMouseOut={(e) => {
-                          e.target.style.background = "rgba(255,107,43,0.08)";
-                          e.target.style.transform = "scale(1)";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.08)";
+                          (e.currentTarget as HTMLElement).style.transform = "scale(1)";
                         }}
                       >
                         {c.name}
