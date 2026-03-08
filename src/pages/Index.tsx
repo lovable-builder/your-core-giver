@@ -646,6 +646,40 @@ export default function App() {
   const [customPath, setCustomPath] = useState("");
   const [customVal, setCustomVal] = useState("");
 
+  // WebSocket bridge state
+  const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8080";
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsReconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+
+  // WebSocket connection effect
+  useEffect(() => {
+    let disposed = false;
+    const connect = () => {
+      if (disposed) return;
+      try {
+        const ws = new WebSocket(BRIDGE_URL);
+        wsRef.current = ws;
+        ws.onopen = () => { if (!disposed) setWsConnected(true); };
+        ws.onclose = () => {
+          if (!disposed) {
+            setWsConnected(false);
+            wsReconnectRef.current = setTimeout(connect, 3000);
+          }
+        };
+        ws.onerror = () => { ws.close(); };
+      } catch {
+        if (!disposed) wsReconnectRef.current = setTimeout(connect, 3000);
+      }
+    };
+    connect();
+    return () => {
+      disposed = true;
+      if (wsReconnectRef.current) clearTimeout(wsReconnectRef.current);
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, [BRIDGE_URL]);
+
   // Live state
   const [channels, setChannels] = useState(() =>
     Array.from({ length: 32 }, (_, i) => ({
