@@ -1869,7 +1869,7 @@ export default function App() {
                       value={customVal}
                       onChange={(e) => setCustomVal(e.target.value)}
                       placeholder="value (optional)"
-                      onKeyDown={(e) => e.key === "Enter" && customPath && sendOsc(customPath, { a: customVal })}
+                      onKeyDown={(e) => e.key === "Enter" && customPath && sendOsc(customPath, customVal || undefined)}
                       style={{
                         flex: 1,
                         background: "rgba(255,255,255,0.04)",
