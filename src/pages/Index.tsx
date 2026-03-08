@@ -636,7 +636,7 @@ export default function App() {
   const [steps, setSteps] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
   const [showConsoleSelect, setShowConsoleSelect] = useState(false);
-  const chatRef = useRef();
+  const chatRef = useRef<HTMLDivElement>(null);
 
   // OSC state
   const [oscHost, setOscHost] = useState("192.168.1.100");
