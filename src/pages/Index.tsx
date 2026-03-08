@@ -994,6 +994,18 @@ export default function App() {
     setOscLogs((prev) => [...prev.slice(-99), { time, path, val: displayVal }]);
 
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      // For /eos/newcmd commands: embed command string in the OSC address path
+      // EOS expects: /eos/newcmd/Cue 3 Go Enter (command in path, no args)
+      if (path === "/eos/newcmd" && typeof value === "string" && value.length > 0) {
+        wsRef.current.send(JSON.stringify({
+          path: `/eos/newcmd/${value}`,
+          args: [],
+          host: oscHost,
+          port: parseInt(oscPort, 10),
+        }));
+        return;
+      }
+
       // Build proper typed args per EOS spec
       let args: Array<{type: string; value: string | number}> = [];
       if (value != null && value !== "") {

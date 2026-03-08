@@ -276,11 +276,11 @@ wss.on("connection", (ws, req) => {
       // New format: app sends { path, args: [{type, value}] }
       // Legacy format: app sends { path, value }
       let oscMsg;
-      if (Array.isArray(rawArgs)) {
+      if (Array.isArray(rawArgs) && rawArgs.length > 0) {
         // Direct typed args from app — send as-is with user path
         oscMsg = { address: withUserPath(path), args: rawArgs };
       } else {
-        // Legacy: parse path + value
+        // No args or legacy: parse path (handles /eos/newcmd/Command String format)
         oscMsg = parseEosCommand(path, value);
       }
       udpPort.send(oscMsg, host, port);
