@@ -203,24 +203,8 @@ export default function FixtureLibrary({ onPatch, onRequestPatch, consolePatch =
   // Import patch from console — creates generic PatchEntry rows from console data
   const handleImportPatch = () => {
     if (!onRequestPatch) return;
-    // Clear existing patch list and request fresh data
-    setPatchList([]);
-    onRequestPatch();
-  };
-
-  // When consolePatch updates and patchList is empty (after import request), populate it
-  const [importRequested, setImportRequested] = useState(false);
-
-  const doImport = () => {
-    setImportRequested(true);
-    setPatchList([]);
-    if (onRequestPatch) onRequestPatch();
-  };
-
-  // Effect: when consolePatch arrives after import request, populate patchList
-  useEffect(() => {
-    if (!importRequested || consolePatch.length === 0) return;
-    setImportRequested(false);
+  // Helper to build patch entries from console data
+  const buildImportedPatch = (data: ConsolePatchEntry[]): PatchEntry[] => {
     const genericFixture: Fixture = {
       id: "imported",
       manufacturer: "Console",
@@ -229,8 +213,7 @@ export default function FixtureLibrary({ onPatch, onRequestPatch, consolePatch =
       description: "Imported from console patch",
       modes: [{ name: "Imported", channels: 1, channelMap: ["Intensity"] }],
     };
-
-    const imported: PatchEntry[] = consolePatch.map((p, i) => ({
+    return data.map((p, i) => ({
       id: `import-${Date.now()}-${i}`,
       fixture: { ...genericFixture, model: p.fixture || "Unknown" },
       mode: { name: "Imported", channels: 1, channelMap: ["—"] },
@@ -240,8 +223,28 @@ export default function FixtureLibrary({ onPatch, onRequestPatch, consolePatch =
       quantity: 1,
       label: p.label || `Ch ${p.channel}`,
     }));
+  };
 
-    setPatchList(imported);
+  const [importRequested, setImportRequested] = useState(false);
+
+  const doImport = () => {
+    // If console patch data is already available, use it immediately
+    if (consolePatch.length > 0) {
+      setPatchList(buildImportedPatch(consolePatch));
+      setImportRequested(false);
+    } else {
+      // No data yet — request it and wait for the effect
+      setImportRequested(true);
+      setPatchList([]);
+    }
+    if (onRequestPatch) onRequestPatch();
+  };
+
+  // Fallback: if we requested and data arrives later
+  useEffect(() => {
+    if (!importRequested || consolePatch.length === 0) return;
+    setImportRequested(false);
+    setPatchList(buildImportedPatch(consolePatch));
   }, [importRequested, consolePatch]);
 
   return (
