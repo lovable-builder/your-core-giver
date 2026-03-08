@@ -1,1 +1,4 @@
 project_id = "xdrwnnwvdubmwitqvarx"
+
+[functions.console-guide]
+verify_jwt = false
