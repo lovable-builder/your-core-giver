@@ -58,7 +58,7 @@ interface PatchEntry {
 // ── Component ────────────────────────────────────────────────────────────────
 
 interface FixtureLibraryProps {
-  onPatch: (path: string, vals: Record<string, string>) => void;
+  onPatch: (path: string, value?: string | number | null) => void;
 }
 
 export default function FixtureLibrary({ onPatch }: FixtureLibraryProps) {
