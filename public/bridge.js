@@ -36,6 +36,17 @@ udpPort.on("error", (err) => console.error("  UDP error:", err.message));
 
 const clients = new Set();
 
+function withUserPath(path) {
+  if (path.startsWith("/eos/user/")) return path;
+  if (path.startsWith("/eos")) return `/eos/user/${EOS_USER}${path.slice(4)}`;
+  return path;
+}
+
+function normalizeArgs(args) {
+  if (!Array.isArray(args)) return [];
+  return args.map((a) => (a && typeof a === "object" && "value" in a ? a.value : a));
+}
+
 function parseEosCommand(path, value) {
   const newcmdPrefix = "/eos/newcmd/";
 
