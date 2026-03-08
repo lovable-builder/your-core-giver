@@ -2314,7 +2314,7 @@ export default function App() {
                     const idx = cues.findIndex((c) => c.id === activeCue);
                     if (idx > 0) {
                       setActiveCue(cues[idx - 1].id);
-                      sendOsc("/eos/cue/back");
+                      sendOsc("/eos/key/back");
                     }
                   }}
                   color="#3b82f6"
