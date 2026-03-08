@@ -1,39 +1,57 @@
 
 
-# Plan: Implement ETC Console AI Main Component
+## Problem Diagnosis
 
-## What happened
-You pasted a large single-file React component for the ETC Console AI app, but **the code is truncated** — it cuts off mid-render inside the "LIVE STAGE" module at `{channels.filter(c => c.in`. The component cannot be implemented as-is because the JSX is incomplete.
+The EOS console command line shows `Cue 1Go - Error: Syntax Error` -- the command string arrives malformed. The current approach embeds command text into the OSC address path (`/eos/newcmd/Cue 1 Go Enter`), which the bridge then tries to extract back out. This round-trip is fragile and loses formatting.
 
-## What I can see
-The pasted code contains:
-- **ParticleField** — canvas-based animated background
-- **SpectrumBar** — audio-style visualizer bars
-- **GlowButton** — styled button with glow effects
-- **StepCard** — console instruction step cards
-- **OscCard** — OSC command sender cards
-- **FixtureGrid** — channel color/intensity visualizer
-- **CueStack** — cue list with active highlight
-- **CommandLog** — scrollable OSC command log
-- **Main App** — three modules: AI Guide, OSC Control, Live Stage
+According to the official ETC EOS OSC documentation, there are **dedicated OSC addresses** for firing cues that bypass the command line entirely:
 
-All use inline styles (no Tailwind), and the AI Guide calls the Anthropic API directly from the client (which exposes the API key — should use Lovable AI via edge function instead).
+```text
+/eos/cue/<number>/fire     → fires cue in current list
+/eos/cue/<list>/<number>/fire → fires cue in specific list
+/eos/key/go                → fires next cue (GO button)
+/eos/key/back              → fires previous cue (BACK button)
+```
 
-## Issues to resolve before implementing
+Using `/eos/newcmd` with a command string was the wrong approach for cue execution.
 
-1. **Incomplete code** — The "LIVE STAGE" module JSX is cut off. I need the rest of the component to implement it fully.
-2. **JSX syntax** — The pasted code has bare `<div>` tags without className/style attributes in many places (likely stripped during copy). This will need reconstruction.
-3. **Direct Anthropic API call** — The `fetchSteps` function calls `api.anthropic.com` directly from the browser, which is insecure and won't work due to CORS. Should be routed through Lovable AI (edge function).
+## Plan
 
-## Proposed approach (once complete code is provided)
+### 1. Switch cue firing to dedicated `/eos/cue/fire` OSC address (Index.tsx)
 
-1. **Create `src/pages/Index.tsx`** — Convert the full component into a properly typed TypeScript React component
-2. **Split into sub-components** — Place helpers (ParticleField, GlowButton, StepCard, OscCard, etc.) into `src/components/` files
-3. **Replace Anthropic direct call** — Use Lovable AI gateway via an edge function for the AI Guide module
-4. **Load fonts** — Add Google Fonts link to `index.html` for Space Mono and DM Sans
-5. **Update CSS** — Set dark background in `index.css`
+**OSC_COMMANDS Cues section** -- change "Fire Cue" from `/eos/newcmd` + `"Cue {a} Go Enter"` to:
+```
+{ label: "Fire Cue", path: "/eos/cue/{a}/fire", params: ["Cue #"], isKey: true }
+```
 
-## Next step
+**CueStack onGo handler** (line ~2314) -- change from:
+```
+sendOsc("/eos/newcmd", `Cue ${cue.id} Go Enter`)
+```
+to:
+```
+sendOsc(`/eos/cue/${cue.id}/fire`)
+```
 
-**Please paste the remaining portion of the component** (from the Live Stage module onward through the closing of the App component) so I can implement the complete application.
+**Cue stack GO button** (line ~2332) -- same change, use `/eos/cue/<id>/fire` instead of newcmd.
+
+**Cue stack BACK button** (line ~2349) -- same change.
+
+### 2. Fix `/eos/newcmd` fallback for non-cue commands (bridge.js + public/bridge.js)
+
+For commands that still use `/eos/newcmd` (Record, Update, Delete, Label, etc.), fix the bridge to use `/eos/cmd` with a proper string argument, which is the documented EOS approach:
+```
+/eos/cmd = "Cue 5 Record Enter"
+```
+
+Update `parseEosCommand` to route `/eos/newcmd/` suffixes through `/eos/cmd` with string arg (this is the EOS-documented way to send command-line text).
+
+### 3. Fix the frontend `sendOsc` for remaining newcmd uses
+
+Change the `sendOsc` function to send `/eos/cmd` with the command as a typed string argument `[{type: "s", value: "..."}]` instead of embedding it in the path, for any remaining command-line text operations (Record, Update, Delete, etc.).
+
+### Files changed
+- `src/pages/Index.tsx` -- switch cue fire to `/eos/cue/X/fire`, fix sendOsc newcmd handling
+- `bridge.js` -- update parseEosCommand to use `/eos/cmd` for command strings
+- `public/bridge.js` -- same bridge fix
 
