@@ -752,6 +752,38 @@ export default function App() {
               label: p.label ?? "",
             })));
           }
+
+          // Cue data from console
+          if (data.subtype === "cue_data") {
+            setCuesLive(true);
+            setCues(prev => {
+              const existing = prev.find(c => c.id === data.cue_number);
+              const cueEntry = {
+                id: data.cue_number,
+                label: data.label || existing?.label || "",
+                time: data.up_time != null ? String(data.up_time) : (existing?.time || "0"),
+                upTime: data.up_time,
+                downTime: data.down_time,
+              };
+              if (existing) {
+                return prev.map(c => c.id === data.cue_number ? { ...c, ...cueEntry } : c);
+              }
+              // Insert in sorted order
+              const newCues = [...prev, cueEntry];
+              newCues.sort((a, b) => parseFloat(a.id) - parseFloat(b.id));
+              return newCues;
+            });
+          }
+
+          if (data.subtype === "cue_property") {
+            setCues(prev => prev.map(c => {
+              if (c.id !== data.cue_number) return c;
+              if (data.property === "label") return { ...c, label: String(data.value || "") };
+              if (data.property === "duration" || data.property === "up") return { ...c, time: String(data.value ?? c.time), upTime: data.value };
+              if (data.property === "down") return { ...c, downTime: data.value };
+              return c;
+            }));
+          }
           break;
         }
         case "active_cue": {
