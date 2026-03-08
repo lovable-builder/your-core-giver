@@ -123,26 +123,41 @@ export default function FixtureLibrary({ onPatch }: FixtureLibraryProps) {
     const chPerFixture = selectedMode.channels;
 
     const newEntries: PatchEntry[] = [];
-    for (let i = 0; i < qty; i++) {
-      const ch = startCh + i;
-      const addr = dmx + i * chPerFixture;
-      const entry: PatchEntry = {
-        id: `${Date.now()}-${i}`,
-        fixture: selected,
-        mode: selectedMode,
-        startChannel: ch,
-        universe: uni,
-        dmxAddress: addr,
-        quantity: 1,
-        label: qty > 1 ? `${fixtureLabel} ${i + 1}` : fixtureLabel,
-      };
-      newEntries.push(entry);
 
-      // Send EOS command-line patch command via /eos/cmd ("#" acts as Enter)
-      onPatch("/eos/newcmd", `Chan ${ch} Address ${uni}/${addr} Enter`);
-    }
+    // Enter Patch mode first — required by EOS before any patch commands
+    onPatch("/eos/key/patch");
 
-    setPatchList((prev) => [...prev, ...newEntries]);
+    // Small delay to let console switch modes, then send patch commands
+    setTimeout(() => {
+      for (let i = 0; i < qty; i++) {
+        const ch = startCh + i;
+        const addr = dmx + i * chPerFixture;
+        const entry: PatchEntry = {
+          id: `${Date.now()}-${i}`,
+          fixture: selected,
+          mode: selectedMode,
+          startChannel: ch,
+          universe: uni,
+          dmxAddress: addr,
+          quantity: 1,
+          label: qty > 1 ? `${fixtureLabel} ${i + 1}` : fixtureLabel,
+        };
+        newEntries.push(entry);
+
+        // Patch command: "Chan {ch} Address {uni}/{addr} Enter"
+        // Use setTimeout stagger so console processes each command sequentially
+        setTimeout(() => {
+          onPatch("/eos/newcmd", `Chan ${ch} Address ${uni}/${addr} Enter`);
+        }, i * 200);
+      }
+
+      setPatchList((prev) => [...prev, ...newEntries]);
+
+      // Return to Live mode after patching completes
+      setTimeout(() => {
+        onPatch("/eos/key/live");
+      }, qty * 200 + 500);
+    }, 300);
   };
 
   const removePatch = (id: string) => {
