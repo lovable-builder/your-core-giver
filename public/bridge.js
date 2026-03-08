@@ -46,14 +46,18 @@ udpPort.on("error", (err) => {
 
 // Helper: parse an EOS command path into proper OSC address + args
 function parseEosCommand(path, value) {
-  // /eos/newcmd/Chan 1 Patch 1/1 Enter → address: /eos/newcmd, arg: "Chan 1 Patch 1/1 Enter"
+  // If command has spaces, convert to /eos/newcmd with string arg.
+  // If already tokenized (/eos/newcmd/Chan/1/Patch/1/1/Enter), pass through as address.
   const newcmdPrefix = "/eos/newcmd/";
   if (path.startsWith(newcmdPrefix) && path.length > newcmdPrefix.length) {
-    const cmdText = path.slice(newcmdPrefix.length);
-    return {
-      address: "/eos/newcmd",
-      args: [{ type: "s", value: cmdText }],
-    };
+    const suffix = path.slice(newcmdPrefix.length);
+    if (suffix.includes(" ")) {
+      return {
+        address: "/eos/newcmd",
+        args: [{ type: "s", value: suffix }],
+      };
+    }
+    return { address: path, args: [] };
   }
 
   // /eos/cue/{n}/fire, /eos/sub/{n}, /eos/fx/{n}/rate etc.
