@@ -1,18 +1,77 @@
-const WebSocket = require('ws');
-const osc = require('osc');
+#!/usr/bin/env node
+/**
+ * EOS AI — Local OSC Bridge Server
+ * Run: npm install ws osc && node bridge.js
+ */
 
-const wss = new WebSocket.Server({ port: 8080 });
+const { Server: WebSocketServer } = require("ws");
+const osc = require("osc");
 
-wss.on('connection', ws => {
-  ws.on('message', msg => {
-    const { path, value, host, port } = JSON.parse(msg);
-    const udp = new osc.UDPPort({ remoteAddress: host, remotePort: parseInt(port) });
-    udp.open();
-    udp.on('ready', () => {
-      udp.send({ address: path, args: value ? [{ type: 'f', value: parseFloat(value) || 0 }] : [] });
-      udp.close();
-    });
+const WS_PORT = parseInt(process.env.PORT || "8080", 10);
+const wss = new WebSocketServer({ port: WS_PORT });
+
+console.log(`\n⚡ EOS AI OSC Bridge`);
+console.log(`  WebSocket listening on ws://localhost:${WS_PORT}`);
+console.log(`  Waiting for connections...\n`);
+
+const udpPort = new osc.UDPPort({ localAddress: "0.0.0.0", localPort: 0 });
+udpPort.open();
+udpPort.on("ready", () => console.log(`  UDP sender ready on port ${udpPort.options.localPort}`));
+udpPort.on("error", (err) => console.error("  UDP error:", err.message));
+
+function parseEosCommand(path, value) {
+  const prefix = "/eos/newcmd/";
+  if (path.startsWith(prefix) && path.length > prefix.length) {
+    return { address: "/eos/newcmd", args: [{ type: "s", value: path.slice(prefix.length) }] };
+  }
+  const args = [];
+  if (value !== undefined && value !== null && value !== "") {
+    const num = Number(value);
+    args.push(!isNaN(num) ? { type: "f", value: num } : { type: "s", value: String(value) });
+  }
+  return { address: path, args };
+}
+
+wss.on("connection", (ws, req) => {
+  console.log(`✓ Client connected from ${req.headers.origin || "unknown"}`);
+
+  ws.on("message", (raw) => {
+    try {
+      const msg = JSON.parse(raw.toString());
+
+      if (msg.type === "ping") {
+        udpPort.send({ address: "/eos/get/version", args: [] }, msg.host || "127.0.0.1", parseInt(msg.port || "3032", 10));
+        ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+        return;
+      }
+      if (msg.type === "request_patch") {
+        udpPort.send({ address: "/eos/get/patch/count", args: [] }, msg.host || "127.0.0.1", parseInt(msg.port || "3032", 10));
+        ws.send(JSON.stringify({ ok: true, info: "Patch dump requested" }));
+        return;
+      }
+      if (msg.type === "request_levels") {
+        udpPort.send({ address: "/eos/get/chans/1/100", args: [] }, msg.host || "127.0.0.1", parseInt(msg.port || "3032", 10));
+        ws.send(JSON.stringify({ ok: true, info: "Levels requested" }));
+        return;
+      }
+
+      const { path, value, host, port } = msg;
+      if (!path || !host || !port) {
+        ws.send(JSON.stringify({ error: "Missing path, host, or port" }));
+        return;
+      }
+
+      const oscMsg = parseEosCommand(path, value);
+      udpPort.send(oscMsg, host, parseInt(port, 10));
+      console.log(`  → OSC  ${oscMsg.address}  ${oscMsg.args.length ? JSON.stringify(oscMsg.args.map(a => a.value)) : "(no args)"}  → ${host}:${port}`);
+      ws.send(JSON.stringify({ ok: true, path: oscMsg.address, host, port }));
+    } catch (err) {
+      console.error("  ✗ Parse error:", err.message);
+      ws.send(JSON.stringify({ error: "Invalid JSON" }));
+    }
   });
+
+  ws.on("close", () => console.log("✗ Client disconnected"));
 });
 
-console.log('OSC Bridge running on ws://localhost:8080');
+process.on("SIGINT", () => { wss.close(); udpPort.close(); process.exit(0); });
