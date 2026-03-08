@@ -25,7 +25,7 @@ const OSC_COMMANDS = {
   Cues: [
     { label: "Go", path: "/eos/key/go", params: [], isKey: true },
     { label: "Back", path: "/eos/key/back", params: [], isKey: true },
-    { label: "Fire Cue", path: "/eos/newcmd", value: "Cue {a} Go Enter", params: ["Cue #"] },
+    { label: "Fire Cue", path: "/eos/cue/{a}/fire", params: ["Cue #"], isKey: true },
     { label: "Record", path: "/eos/newcmd", value: "Cue {a} Record Enter", params: ["Cue #"] },
     { label: "Update", path: "/eos/newcmd", value: "Cue {a} Update Enter", params: ["Cue #"] },
     { label: "Delete", path: "/eos/newcmd", value: "Cue {a} Delete Enter Enter", params: ["Cue #"] },
@@ -994,12 +994,12 @@ export default function App() {
     setOscLogs((prev) => [...prev.slice(-99), { time, path, val: displayVal }]);
 
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      // For /eos/newcmd commands: embed command string in the OSC address path
-      // EOS expects: /eos/newcmd/Cue 3 Go Enter (command in path, no args)
+      // For /eos/newcmd commands: send as /eos/newcmd with command string as typed arg
+      // Bridge will forward to EOS as /eos/user/X/newcmd + string argument
       if (path === "/eos/newcmd" && typeof value === "string" && value.length > 0) {
         wsRef.current.send(JSON.stringify({
-          path: `/eos/newcmd/${value}`,
-          args: [],
+          path: "/eos/newcmd",
+          args: [{ type: "s", value }],
           host: oscHost,
           port: parseInt(oscPort, 10),
         }));
@@ -2311,7 +2311,7 @@ export default function App() {
                   isLive={cuesLive}
                   onGo={(cue) => {
                     setActiveCue(cue.id);
-                    sendOsc("/eos/newcmd", `Cue ${cue.id} Go Enter`);
+                    sendOsc(`/eos/cue/${cue.id}/fire`);
                   }}
                 />
               </div>
@@ -2329,10 +2329,10 @@ export default function App() {
                     if (idx < cues.length - 1) {
                       const nextCue = cues[idx + 1];
                       setActiveCue(nextCue.id);
-                      sendOsc("/eos/newcmd", `Cue ${nextCue.id} Go Enter`);
+                      sendOsc(`/eos/cue/${nextCue.id}/fire`);
                     } else if (cues.length > 0 && activeCue === null) {
                       setActiveCue(cues[0].id);
-                      sendOsc("/eos/newcmd", `Cue ${cues[0].id} Go Enter`);
+                      sendOsc(`/eos/cue/${cues[0].id}/fire`);
                     }
                   }}
                   active
@@ -2346,7 +2346,7 @@ export default function App() {
                     if (idx > 0) {
                       const prevCue = cues[idx - 1];
                       setActiveCue(prevCue.id);
-                      sendOsc("/eos/newcmd", `Cue ${prevCue.id} Go Enter`);
+                      sendOsc(`/eos/cue/${prevCue.id}/fire`);
                     }
                   }}
                   color="#3b82f6"

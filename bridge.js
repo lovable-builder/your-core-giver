@@ -39,20 +39,31 @@ function normalizeArgs(args) {
 }
 
 function parseEosCommand(path, value) {
-  const prefix = "/eos/newcmd/";
+  const newcmdPrefix = "/eos/newcmd/";
 
-  // Human-readable newcmd text -> /eos/user/X/newcmd + string arg
-  if (path.startsWith(prefix) && path.length > prefix.length) {
-    const suffix = path.slice(prefix.length);
-    if (suffix.includes(" ")) {
-      return {
-        address: withUserPath("/eos/newcmd"),
-        args: [{ type: "s", value: suffix }],
-      };
-    }
+  // Legacy: command string embedded in path (e.g. /eos/newcmd/Cue 1 Go Enter)
+  // Convert to /eos/newcmd with string arg
+  if (path.startsWith(newcmdPrefix) && path.length > newcmdPrefix.length) {
+    const suffix = path.slice(newcmdPrefix.length);
+    return {
+      address: withUserPath("/eos/newcmd"),
+      args: [{ type: "s", value: suffix }],
+    };
   }
 
-  // /eos/cmd -> ensure string arg and user path
+  // /eos/newcmd with no embedded suffix — value should be the command string
+  if (path === "/eos/newcmd") {
+    if (value !== undefined && value !== null && value !== "") {
+      return {
+        address: withUserPath("/eos/newcmd"),
+        args: [{ type: "s", value: String(value) }],
+      };
+    }
+    // No value — send as-is (will be a no-op on EOS)
+    return { address: withUserPath("/eos/newcmd"), args: [] };
+  }
+
+  // /eos/cmd passthrough
   if (path === "/eos/cmd" || path === withUserPath("/eos/cmd")) {
     if (value !== undefined && value !== null && value !== "") {
       return {

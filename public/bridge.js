@@ -36,30 +36,32 @@ udpPort.on("error", (err) => console.error("  UDP error:", err.message));
 
 const clients = new Set();
 
-function withUserPath(path) {
-  if (path.startsWith("/eos/user/")) return path;
-  if (path.startsWith("/eos")) return `/eos/user/${EOS_USER}${path.slice(4)}`;
-  return path;
-}
-
-function normalizeArgs(args) {
-  if (!Array.isArray(args)) return [];
-  return args.map((a) => (a && typeof a === "object" && "value" in a ? a.value : a));
-}
-
 function parseEosCommand(path, value) {
   const newcmdPrefix = "/eos/newcmd/";
 
+  // Legacy: command string embedded in path (e.g. /eos/newcmd/Cue 1 Go Enter)
+  // Convert to /eos/newcmd with string arg
   if (path.startsWith(newcmdPrefix) && path.length > newcmdPrefix.length) {
     const suffix = path.slice(newcmdPrefix.length);
-    if (suffix.includes(" ")) {
-      return {
-        address: withUserPath("/eos/newcmd"),
-        args: [{ type: "s", value: suffix }],
-      };
-    }
+    return {
+      address: withUserPath("/eos/newcmd"),
+      args: [{ type: "s", value: suffix }],
+    };
   }
 
+  // /eos/newcmd with no embedded suffix — value should be the command string
+  if (path === "/eos/newcmd") {
+    if (value !== undefined && value !== null && value !== "") {
+      return {
+        address: withUserPath("/eos/newcmd"),
+        args: [{ type: "s", value: String(value) }],
+      };
+    }
+    // No value — send as-is (will be a no-op on EOS)
+    return { address: withUserPath("/eos/newcmd"), args: [] };
+  }
+
+  // /eos/cmd passthrough
   if (path === "/eos/cmd" || path === withUserPath("/eos/cmd")) {
     if (value !== undefined && value !== null && value !== "") {
       return {
@@ -69,11 +71,11 @@ function parseEosCommand(path, value) {
     }
   }
 
+  // Default passthrough (+ optional numeric/string arg)
   const args = [];
   if (value !== undefined && value !== null && value !== "") {
     const num = Number(value);
-    if (!isNaN(num)) args.push({ type: "f", value: num });
-    else args.push({ type: "s", value: String(value) });
+    args.push(!isNaN(num) ? { type: "f", value: num } : { type: "s", value: String(value) });
   }
 
   return { address: withUserPath(path), args };
