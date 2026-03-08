@@ -784,9 +784,9 @@ export default function App() {
   // Send typed message to bridge
   const sendBridgeMessage = useCallback((msg: Record<string, any>) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(msg));
+      wsRef.current.send(JSON.stringify({ ...msg, host: oscHost, port: parseInt(oscPort, 10) }));
     }
-  }, []);
+  }, [oscHost, oscPort]);
 
   // WebSocket connection effect
   useEffect(() => {
