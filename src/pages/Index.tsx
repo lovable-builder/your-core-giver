@@ -716,6 +716,8 @@ export default function App() {
   const handleBridgeMessage = useCallback((event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data);
+      setMsgCount(c => c + 1);
+      setLastMsg(`${data.type || "?"}${data.subtype ? "/" + data.subtype : ""}`);
       console.log("[BRIDGE MSG]", data.type, data.subtype || "", data);
       if (!data.type) return;
 
