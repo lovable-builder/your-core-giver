@@ -2315,8 +2315,12 @@ export default function App() {
                   onClick={() => {
                     const idx = cues.findIndex((c) => c.id === activeCue);
                     if (idx < cues.length - 1) {
-                      setActiveCue(cues[idx + 1].id);
-                      sendOsc("/eos/key/go");
+                      const nextCue = cues[idx + 1];
+                      setActiveCue(nextCue.id);
+                      sendOsc("/eos/newcmd", `Cue ${nextCue.id} Go Enter`);
+                    } else if (cues.length > 0 && activeCue === null) {
+                      setActiveCue(cues[0].id);
+                      sendOsc("/eos/newcmd", `Cue ${cues[0].id} Go Enter`);
                     }
                   }}
                   active
@@ -2328,8 +2332,9 @@ export default function App() {
                   onClick={() => {
                     const idx = cues.findIndex((c) => c.id === activeCue);
                     if (idx > 0) {
-                      setActiveCue(cues[idx - 1].id);
-                      sendOsc("/eos/key/back");
+                      const prevCue = cues[idx - 1];
+                      setActiveCue(prevCue.id);
+                      sendOsc("/eos/newcmd", `Cue ${prevCue.id} Go Enter`);
                     }
                   }}
                   color="#3b82f6"
