@@ -153,8 +153,9 @@ function parseConsoleOscMessage(oscMsg) {
     };
   }
 
-  // Active cue (running cue feedback)
-  if (address.includes("cue") && (address.includes("/out/") || address.includes("/get/"))) {
+  // Active cue (running cue feedback) — only match genuine active/pending cue notifications
+  // NOT /get/ responses (those are handled by cue_data/cue_count above)
+  if (address.includes("cue") && address.includes("/out/") && !address.includes("/get/") && !address.includes("/out/get/")) {
     const cueArg = args.find((a) => typeof a === "number" || /^\d+(\.\d+)?$/.test(String(a)));
     return {
       type: "console_feedback",
