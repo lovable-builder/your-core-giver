@@ -881,14 +881,15 @@ export default function App() {
       b: 40 + Math.random() * 60,
     })),
   );
-  const [cues] = useState([
-    { id: "1", label: "Opening — Warm Wash", time: "3.5" },
-    { id: "2", label: "Scene 2 — Spot DS", time: "2.0" },
-    { id: "3", label: "Transition — Fade to Blue", time: "5.0" },
-    { id: "4", label: "Act 2 — Full Stage", time: "1.5" },
-    { id: "5", label: "Blackout", time: "0.5" },
-    { id: "6", label: "Curtain Call", time: "2.0" },
+  const [cues, setCues] = useState([
+    { id: "1", label: "Opening — Warm Wash", time: "3.5", upTime: null, downTime: null },
+    { id: "2", label: "Scene 2 — Spot DS", time: "2.0", upTime: null, downTime: null },
+    { id: "3", label: "Transition — Fade to Blue", time: "5.0", upTime: null, downTime: null },
+    { id: "4", label: "Act 2 — Full Stage", time: "1.5", upTime: null, downTime: null },
+    { id: "5", label: "Blackout", time: "0.5", upTime: null, downTime: null },
+    { id: "6", label: "Curtain Call", time: "2.0", upTime: null, downTime: null },
   ]);
+  const [cuesLive, setCuesLive] = useState(false);
   const [activeCue, setActiveCue] = useState(null);
   const [specActive, setSpecActive] = useState(false);
   const [faderVals, setFaderVals] = useState(() => [
