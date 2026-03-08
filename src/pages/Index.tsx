@@ -687,6 +687,8 @@ export default function App() {
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
+  const [msgCount, setMsgCount] = useState(0);
+  const [lastMsg, setLastMsg] = useState("");
 
   // Console feedback state
   const [consoleFeedback, setConsoleFeedback] = useState<{
@@ -714,6 +716,8 @@ export default function App() {
   const handleBridgeMessage = useCallback((event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data);
+      setMsgCount(c => c + 1);
+      setLastMsg(`${data.type || "?"}${data.subtype ? "/" + data.subtype : ""}`);
       console.log("[BRIDGE MSG]", data.type, data.subtype || "", data);
       if (!data.type) return;
 
@@ -1242,6 +1246,11 @@ export default function App() {
             <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", color: wsConnected ? "#22c55e" : "#ef4444" }}>
               {wsConnected ? "BRIDGE" : "OFFLINE"}
             </span>
+            {wsConnected && (
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "8px", color: "#666", marginLeft: "4px" }}>
+                {msgCount > 0 ? `${msgCount} msgs • ${lastMsg}` : "0 msgs"}
+              </span>
+            )}
           </div>
           {selectedConsole && (
             <div
