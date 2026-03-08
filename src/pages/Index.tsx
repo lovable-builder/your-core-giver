@@ -1246,6 +1246,11 @@ export default function App() {
             <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", color: wsConnected ? "#22c55e" : "#ef4444" }}>
               {wsConnected ? "BRIDGE" : "OFFLINE"}
             </span>
+            {wsConnected && (
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "8px", color: "#666", marginLeft: "4px" }}>
+                {msgCount > 0 ? `${msgCount} msgs • ${lastMsg}` : "0 msgs"}
+              </span>
+            )}
           </div>
           {selectedConsole && (
             <div
