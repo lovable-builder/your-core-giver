@@ -2226,16 +2226,26 @@ export default function App() {
                 >
                   CUE STACK
                 </span>
+                {cuesLive && (
+                  <span style={{
+                    fontFamily: "'Space Mono', monospace", fontSize: "9px", color: "#22c55e",
+                    padding: "2px 8px", borderRadius: "4px", background: "rgba(34,197,94,0.1)",
+                    border: "1px solid rgba(34,197,94,0.2)",
+                  }}>
+                    LIVE
+                  </span>
+                )}
                 {activeCue && (
                   <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#FF6B2B" }}>
                     CUE {activeCue} ACTIVE
                   </span>
                 )}
               </div>
-              <div style={{ padding: "14px" }}>
+              <div style={{ padding: "14px", maxHeight: "400px", overflowY: "auto" }}>
                 <CueStack
                   cues={cues}
                   activeCue={activeCue}
+                  isLive={cuesLive}
                   onGo={(cue) => {
                     setActiveCue(cue.id);
                     sendOsc(`/eos/cue/${cue.id}/fire`);
