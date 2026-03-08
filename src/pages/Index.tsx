@@ -444,7 +444,7 @@ function FixtureGrid({ channels }) {
           key={i}
           title={`Ch ${ch.id}: ${ch.intensity}%`}
           style={{
-            aspect: "1",
+            aspectRatio: "1",
             borderRadius: "6px",
             position: "relative",
             overflow: "hidden",
