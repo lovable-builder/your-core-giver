@@ -683,17 +683,26 @@ export default function App() {
 
       switch (data.type) {
         case "console_feedback": {
+          // Any console feedback implies bridge<->console path is alive
+          setConsoleFeedback(prev => ({
+            ...prev,
+            consoleOnline: true,
+            commandLine:
+              data.command_line ??
+              (data.subtype === "raw" && data.address ? `${data.address} ${JSON.stringify(data.args || [])}` : prev.commandLine),
+            channelCount: data.channel_count ?? prev.channelCount,
+          }));
+
           if (data.subtype === "active_cue" || data.active_cue !== undefined) {
             setConsoleFeedback(prev => ({
               ...prev,
               activeCue: data.active_cue ?? data.cue ?? prev.activeCue,
-              commandLine: data.command_line ?? prev.commandLine,
-              channelCount: data.channel_count ?? prev.channelCount,
             }));
             if (data.active_cue || data.cue) {
               setActiveCue(String(data.active_cue ?? data.cue));
             }
           }
+
           if (data.subtype === "channel_intensity" || data.channels) {
             const chData = data.channels || [];
             setChannels(prev => {
@@ -713,6 +722,7 @@ export default function App() {
               return updated;
             });
           }
+
           if (data.subtype === "patch" || data.patch) {
             const patchData = data.patch || [];
             setConsolePatch(patchData.map((p: any) => ({
@@ -817,6 +827,30 @@ export default function App() {
       if (wsRef.current) wsRef.current.close();
     };
   }, [BRIDGE_URL, handleBridgeMessage]);
+
+  // Polling fallback: continuously request console state while connected
+  useEffect(() => {
+    if (!wsConnected) return;
+
+    // Prime immediate fetch
+    sendBridgeMessage({ type: "ping" });
+    sendBridgeMessage({ type: "request_levels" });
+    sendBridgeMessage({ type: "request_patch" });
+
+    const fastPoll = setInterval(() => {
+      sendBridgeMessage({ type: "ping" });
+      sendBridgeMessage({ type: "request_levels" });
+    }, 3000);
+
+    const slowPoll = setInterval(() => {
+      sendBridgeMessage({ type: "request_patch" });
+    }, 15000);
+
+    return () => {
+      clearInterval(fastPoll);
+      clearInterval(slowPoll);
+    };
+  }, [wsConnected, sendBridgeMessage]);
 
   // Live state
   const [channels, setChannels] = useState(() =>

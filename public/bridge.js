@@ -8,119 +8,209 @@
  * Usage:
  *   1. Install dependencies:  npm install ws osc
  *   2. Run the bridge:        node bridge.js
- *   3. (Optional) Set port:   PORT=9000 node bridge.js
- * 
- * The web app sends JSON: { path, value, host, port }
- * This bridge converts it to a UDP OSC message and sends it.
- * 
- * For /eos/newcmd/ commands, the command text after the prefix
- * is sent as a string argument to /eos/newcmd (EOS protocol).
+ *   3. (Optional) Set port:   PORT=9000 EOS_USER=1 node bridge.js
  */
 
 const { Server: WebSocketServer } = require("ws");
 const osc = require("osc");
 
 const WS_PORT = parseInt(process.env.PORT || "8080", 10);
+const EOS_USER = process.env.EOS_USER || "1";
 
 const wss = new WebSocketServer({ port: WS_PORT });
 
 console.log(`\n⚡ EOS AI OSC Bridge`);
 console.log(`  WebSocket listening on ws://localhost:${WS_PORT}`);
+console.log(`  EOS user: ${EOS_USER}`);
 console.log(`  Waiting for connections...\n`);
 
-// One shared UDP port for sending
 const udpPort = new osc.UDPPort({
   localAddress: "0.0.0.0",
-  localPort: 0, // ephemeral
+  localPort: 0,
+  metadata: true,
 });
 
 udpPort.open();
+udpPort.on("ready", () => console.log(`  UDP sender ready on port ${udpPort.options.localPort}`));
+udpPort.on("error", (err) => console.error("  UDP error:", err.message));
 
-udpPort.on("ready", () => {
-  console.log(`  UDP sender ready on port ${udpPort.options.localPort}`);
-});
+const clients = new Set();
 
-udpPort.on("error", (err) => {
-  console.error("  UDP error:", err.message);
-});
+function withUserPath(path) {
+  if (path.startsWith("/eos/user/")) return path;
+  if (path.startsWith("/eos")) return `/eos/user/${EOS_USER}${path.slice(4)}`;
+  return path;
+}
 
-// Helper: parse an EOS command path into proper OSC address + args
+function normalizeArgs(args) {
+  if (!Array.isArray(args)) return [];
+  return args.map((a) => (a && typeof a === "object" && "value" in a ? a.value : a));
+}
+
 function parseEosCommand(path, value) {
-  // If command has spaces, convert to /eos/newcmd with string arg.
-  // If already tokenized (/eos/newcmd/Chan/1/Patch/1/1/Enter), pass through as address.
   const newcmdPrefix = "/eos/newcmd/";
+
   if (path.startsWith(newcmdPrefix) && path.length > newcmdPrefix.length) {
     const suffix = path.slice(newcmdPrefix.length);
     if (suffix.includes(" ")) {
       return {
-        address: "/eos/newcmd",
+        address: withUserPath("/eos/newcmd"),
         args: [{ type: "s", value: suffix }],
       };
     }
-    return { address: path, args: [] };
   }
 
-  // /eos/cue/{n}/fire, /eos/sub/{n}, /eos/fx/{n}/rate etc.
-  const args = [];
-  if (value !== undefined && value !== null && value !== "") {
-    const num = Number(value);
-    if (!isNaN(num)) {
-      args.push({ type: "f", value: num });
-    } else {
-      args.push({ type: "s", value: String(value) });
+  if (path === "/eos/cmd" || path === withUserPath("/eos/cmd")) {
+    if (value !== undefined && value !== null && value !== "") {
+      return {
+        address: withUserPath("/eos/cmd"),
+        args: [{ type: "s", value: String(value) }],
+      };
     }
   }
 
-  return { address: path, args };
+  const args = [];
+  if (value !== undefined && value !== null && value !== "") {
+    const num = Number(value);
+    if (!isNaN(num)) args.push({ type: "f", value: num });
+    else args.push({ type: "s", value: String(value) });
+  }
+
+  return { address: withUserPath(path), args };
 }
 
+function parseConsoleOscMessage(oscMsg) {
+  const address = oscMsg?.address || "";
+  const args = normalizeArgs(oscMsg?.args);
+
+  if (address.includes("/out/get/version") || address.includes("/out/ping")) {
+    return { type: "pong", source: "console", version: args[0] ?? null };
+  }
+
+  if (address.includes("/out/cmd") || address.includes("/out/command") || address.includes("/out/cmd_line")) {
+    return {
+      type: "command_line",
+      text: args.map((a) => String(a)).join(" "),
+      address,
+    };
+  }
+
+  if (address.includes("cue") && (address.includes("/out/") || address.includes("/get/"))) {
+    const cueArg = args.find((a) => typeof a === "number" || /^\d+(\.\d+)?$/.test(String(a)));
+    return {
+      type: "console_feedback",
+      subtype: "active_cue",
+      active_cue: cueArg ? String(cueArg) : null,
+      address,
+      args,
+    };
+  }
+
+  if (address.includes("chan") || address.includes("level") || address.includes("/out/get/chans")) {
+    const channels = [];
+    for (let i = 0; i < args.length - 1; i += 2) {
+      const channel = Number(args[i]);
+      const intensity = Number(args[i + 1]);
+      if (!isNaN(channel) && !isNaN(intensity)) {
+        channels.push({ channel, intensity });
+      }
+    }
+
+    if (channels.length > 0) {
+      return {
+        type: "console_feedback",
+        subtype: "channel_intensity",
+        channels,
+        channel_count: channels.length,
+        address,
+      };
+    }
+  }
+
+  if (address.includes("patch")) {
+    const patch = [];
+    for (let i = 0; i < args.length - 2; i += 3) {
+      const channel = Number(args[i]);
+      const universe = Number(args[i + 1]);
+      const addr = Number(args[i + 2]);
+      if (!isNaN(channel) && !isNaN(universe) && !isNaN(addr)) {
+        patch.push({ channel, universe, address: addr });
+      }
+    }
+
+    return {
+      type: "console_feedback",
+      subtype: "patch",
+      patch,
+      address,
+      args,
+    };
+  }
+
+  return {
+    type: "console_feedback",
+    subtype: "raw",
+    address,
+    args,
+  };
+}
+
+function broadcast(payload) {
+  const json = JSON.stringify(payload);
+  clients.forEach((ws) => {
+    if (ws.readyState === 1) ws.send(json);
+  });
+}
+
+udpPort.on("message", (oscMsg) => {
+  try {
+    const feedback = parseConsoleOscMessage(oscMsg);
+    broadcast(feedback);
+    console.log(`  ← OSC  ${oscMsg.address}  ${JSON.stringify(normalizeArgs(oscMsg.args))}`);
+  } catch (err) {
+    console.error("  ✗ Incoming OSC parse error:", err.message);
+  }
+});
+
 wss.on("connection", (ws, req) => {
+  clients.add(ws);
   const origin = req.headers.origin || "unknown";
   console.log(`✓ Client connected from ${origin}`);
 
   ws.on("message", (raw) => {
     try {
       const msg = JSON.parse(raw.toString());
+      const host = msg.host || "127.0.0.1";
+      const port = parseInt(msg.port || "3032", 10);
 
-      // Handle typed control messages from the app
-      if (msg.type === "request_patch") {
-        console.log("  ← Request patch dump from client");
-        // Send OSC query to get patch data from console
-        const oscMsg = { address: "/eos/get/patch/count", args: [] };
-        udpPort.send(oscMsg, msg.host || "127.0.0.1", parseInt(msg.port || "3032", 10));
-        ws.send(JSON.stringify({ ok: true, info: "Patch dump requested" }));
+      if (msg.type === "ping") {
+        udpPort.send({ address: withUserPath("/eos/get/version"), args: [] }, host, port);
+        ws.send(JSON.stringify({ type: "pong", source: "bridge", timestamp: Date.now() }));
         return;
       }
 
       if (msg.type === "request_levels") {
-        console.log("  ← Request levels from client");
-        const oscMsg = { address: "/eos/get/chans/1/100", args: [] };
-        udpPort.send(oscMsg, msg.host || "127.0.0.1", parseInt(msg.port || "3032", 10));
-        ws.send(JSON.stringify({ ok: true, info: "Levels requested" }));
+        udpPort.send({ address: withUserPath("/eos/get/chans/1/512"), args: [] }, host, port);
+        ws.send(JSON.stringify({ ok: true, type: "request_levels" }));
         return;
       }
 
-      if (msg.type === "ping") {
-        console.log("  ← Ping from client");
-        const oscMsg = { address: "/eos/get/version", args: [] };
-        udpPort.send(oscMsg, msg.host || "127.0.0.1", parseInt(msg.port || "3032", 10));
-        // Respond with pong immediately (bridge is alive)
-        ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+      if (msg.type === "request_patch") {
+        udpPort.send({ address: withUserPath("/eos/get/patch/count"), args: [] }, host, port);
+        udpPort.send({ address: withUserPath("/eos/get/patch/1/512"), args: [] }, host, port);
+        ws.send(JSON.stringify({ ok: true, type: "request_patch" }));
         return;
       }
 
-      // Standard OSC relay
-      const { path, value, host, port } = msg;
-
-      if (!path || !host || !port) {
-        console.warn("  ⚠ Invalid message (missing path/host/port):", msg);
-        ws.send(JSON.stringify({ error: "Missing path, host, or port" }));
+      const { path, value } = msg;
+      if (!path) {
+        console.warn("  ⚠ Invalid message (missing path):", msg);
+        ws.send(JSON.stringify({ error: "Missing path" }));
         return;
       }
 
       const oscMsg = parseEosCommand(path, value);
-
-      udpPort.send(oscMsg, host, parseInt(port, 10));
+      udpPort.send(oscMsg, host, port);
       console.log(`  → OSC  ${oscMsg.address}  ${oscMsg.args.length ? JSON.stringify(oscMsg.args.map(a => a.value)) : "(no args)"}  → ${host}:${port}`);
 
       ws.send(JSON.stringify({ ok: true, path: oscMsg.address, host, port }));
@@ -131,6 +221,7 @@ wss.on("connection", (ws, req) => {
   });
 
   ws.on("close", () => {
+    clients.delete(ws);
     console.log("✗ Client disconnected");
   });
 });
