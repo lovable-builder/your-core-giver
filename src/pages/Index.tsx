@@ -706,36 +706,38 @@ export default function App() {
     if (action.label === "GO" && activeCue === null) setActiveCue("1");
   };
 
-  const fetchSteps = async (prompt, consoleName) => {
+  const fetchSteps = async (prompt: string, consoleName: string) => {
     setLoading(true);
     setSteps(null);
     setActiveStep(0);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: `You are an elite ETC lighting console trainer. Return ONLY a valid JSON array, no markdown. Each step: { button, zone, color (hex: #FF6B2B mode, #3B82F6 keypad, #8B5CF6 command, #EF4444 record, #10B981 confirm, #EAB308 soft), desc }. Console: ${consoleName}. 4–8 steps max.`,
-          messages: [{ role: "user", content: `How do I: ${prompt}` }],
-        }),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/console-guide`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ prompt, consoleName }),
+        }
+      );
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
       const data = await res.json();
-      const txt = data.content
-        .map((c) => c.text || "")
-        .join("")
-        .replace(/```json|```/g, "")
-        .trim();
-      setSteps(JSON.parse(txt));
+      const parsed = data.steps;
+      setSteps(parsed);
       setMessages((prev) => [
         ...prev.filter((m) => m.type !== "loading"),
         {
           role: "assistant",
-          text: `Here's your ${consoleName} guide for "${prompt}" — ${JSON.parse(txt).length} steps.`,
+          text: `Here's your ${consoleName} guide for "${prompt}" — ${parsed.length} steps.`,
         },
       ]);
-    } catch {
+    } catch (err: any) {
+      console.error("fetchSteps error:", err);
       const fallback = [
         { button: "LIVE", zone: "Mode Keys", color: "#FF6B2B", desc: "Ensure you're in Live mode." },
         { button: "CUE", zone: "Keypad", color: "#3B82F6", desc: "Press CUE to begin cue command." },
@@ -748,7 +750,7 @@ export default function App() {
         ...prev.filter((m) => m.type !== "loading"),
         {
           role: "assistant",
-          text: `Guide ready for "${prompt}" on ${consoleName}.`,
+          text: `Guide ready for "${prompt}" on ${consoleName}. (Using fallback — ${err.message})`,
         },
       ]);
     }
