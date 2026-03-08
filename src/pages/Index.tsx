@@ -675,7 +675,7 @@ export default function App() {
   const chatRef = useRef<HTMLDivElement>(null);
 
   // OSC state
-  const [oscHost, setOscHost] = useState("192.168.1.100");
+  const [oscHost, setOscHost] = useState("192.168.0.15");
   const [oscPort, setOscPort] = useState("3033");
   const [oscTab, setOscTab] = useState("Channels");
   const [oscLogs, setOscLogs] = useState([]);
