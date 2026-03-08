@@ -190,7 +190,7 @@ function SpectrumBar({ active }) {
 }
 
 // ── GLOW BUTTON ────────────────────────────────────────────────────────────────
-function GlowButton({ children, onClick, color = "#FF6B2B", active, disabled, style = {} }) {
+function GlowButton({ children, onClick, color = "#FF6B2B", active = false, disabled = false, style = {} }: { active?: any; children: any; color?: string; disabled?: any; onClick: any; style?: any }) {
   const [pressed, setPressed] = useState(false);
   return (
     <button
@@ -325,7 +325,7 @@ function StepCard({ step, index, isActive, total, onClick }) {
 
 // ── OSC COMMAND CARD ───────────────────────────────────────────────────────────
 function OscCard({ cmd, onSend }) {
-  const [vals, setVals] = useState({});
+  const [vals, setVals] = useState<Record<string, string>>({});
   const [fired, setFired] = useState(false);
 
   const resolvedPath = cmd.path
@@ -444,7 +444,7 @@ function FixtureGrid({ channels }) {
           key={i}
           title={`Ch ${ch.id}: ${ch.intensity}%`}
           style={{
-            aspect: "1",
+            aspectRatio: "1",
             borderRadius: "6px",
             position: "relative",
             overflow: "hidden",
@@ -549,7 +549,7 @@ function CueStack({ cues, activeCue, onGo }) {
 
 // ── COMMAND LOG ────────────────────────────────────────────────────────────────
 function CommandLog({ logs, onClear }) {
-  const ref = useRef();
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
   }, [logs]);
@@ -636,7 +636,7 @@ export default function App() {
   const [steps, setSteps] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
   const [showConsoleSelect, setShowConsoleSelect] = useState(false);
-  const chatRef = useRef();
+  const chatRef = useRef<HTMLDivElement>(null);
 
   // OSC state
   const [oscHost, setOscHost] = useState("192.168.1.100");
@@ -1069,12 +1069,12 @@ export default function App() {
                           transition: "all 0.2s",
                         }}
                         onMouseOver={(e) => {
-                          e.target.style.background = "rgba(255,107,43,0.2)";
-                          e.target.style.transform = "scale(1.05)";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.2)";
+                          (e.currentTarget as HTMLElement).style.transform = "scale(1.05)";
                         }}
                         onMouseOut={(e) => {
-                          e.target.style.background = "rgba(255,107,43,0.08)";
-                          e.target.style.transform = "scale(1)";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.08)";
+                          (e.currentTarget as HTMLElement).style.transform = "scale(1)";
                         }}
                       >
                         {c.name}
@@ -1316,12 +1316,12 @@ export default function App() {
                       transition: "all 0.2s",
                     }}
                     onMouseOver={(e) => {
-                      e.target.style.borderColor = "rgba(255,107,43,0.4)";
-                      e.target.style.color = "#FF6B2B";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,107,43,0.4)";
+                      (e.currentTarget as HTMLElement).style.color = "#FF6B2B";
                     }}
                     onMouseOut={(e) => {
-                      e.target.style.borderColor = "rgba(255,255,255,0.07)";
-                      e.target.style.color = "#444";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
+                      (e.currentTarget as HTMLElement).style.color = "#444";
                     }}
                   >
                     {s}
