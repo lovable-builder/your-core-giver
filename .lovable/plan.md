@@ -1,39 +1,35 @@
 
 
-# Plan: Implement ETC Console AI Main Component
+## Why commands aren't reaching the console
 
-## What happened
-You pasted a large single-file React component for the ETC Console AI app, but **the code is truncated** — it cuts off mid-render inside the "LIVE STAGE" module at `{channels.filter(c => c.in`. The component cannot be implemented as-is because the JSX is incomplete.
+**The port is wrong.** The app defaults `oscPort` to `"3033"` (line 679 of Index.tsx), but port 3033 is the **bridge's own RX port** — where the bridge listens for feedback FROM the console. The EOS console listens for commands on port **3032** (`EOS_PORT`).
 
-## What I can see
-The pasted code contains:
-- **ParticleField** — canvas-based animated background
-- **SpectrumBar** — audio-style visualizer bars
-- **GlowButton** — styled button with glow effects
-- **StepCard** — console instruction step cards
-- **OscCard** — OSC command sender cards
-- **FixtureGrid** — channel color/intensity visualizer
-- **CueStack** — cue list with active highlight
-- **CommandLog** — scrollable OSC command log
-- **Main App** — three modules: AI Guide, OSC Control, Live Stage
+So every command the app sends includes `port: 3033`, and the bridge dutifully sends the OSC packet to port 3033 — which is itself. The console on port 3032 never sees it.
 
-All use inline styles (no Tailwind), and the AI Guide calls the Anthropic API directly from the client (which exposes the API key — should use Lovable AI via edge function instead).
+**Secondary issue:** `withUser()` in bridge.js (line 122) excludes `/eos/key/` paths from user-scoping. EOS requires user-scoped key commands (`/eos/user/1/key/go`) when operating with a user ID. Without the prefix, the console may ignore key presses like GO, Back, Clear, etc.
 
-## Issues to resolve before implementing
+## Fix
 
-1. **Incomplete code** — The "LIVE STAGE" module JSX is cut off. I need the rest of the component to implement it fully.
-2. **JSX syntax** — The pasted code has bare `<div>` tags without className/style attributes in many places (likely stripped during copy). This will need reconstruction.
-3. **Direct Anthropic API call** — The `fetchSteps` function calls `api.anthropic.com` directly from the browser, which is insecure and won't work due to CORS. Should be routed through Lovable AI (edge function).
+### 1. Fix default OSC port in Index.tsx (line 680)
+Change the default from `"3033"` to `"3032"`:
+```typescript
+const [oscPort, setOscPort] = useState(() => localStorage.getItem("eos_osc_port") || "3032");
+```
 
-## Proposed approach (once complete code is provided)
+### 2. Fix `withUser()` in bridge.js (line 122)
+Remove the `/eos/key/` exclusion so key commands get user-scoped:
+```javascript
+function withUser(path) {
+  if (!path) return path;
+  if (path.startsWith("/eos/user/")) return path;
+  if (path.startsWith("/eos/get/")) return path;
+  if (path.startsWith("/eos/ping")) return path;
+  // Remove: if (path.startsWith("/eos/key/")) return path;
+  if (path.startsWith("/eos")) return `/eos/user/${EOS_USER}${path.slice(4)}`;
+  return path;
+}
+```
 
-1. **Create `src/pages/Index.tsx`** — Convert the full component into a properly typed TypeScript React component
-2. **Split into sub-components** — Place helpers (ParticleField, GlowButton, StepCard, OscCard, etc.) into `src/components/` files
-3. **Replace Anthropic direct call** — Use Lovable AI gateway via an edge function for the AI Guide module
-4. **Load fonts** — Add Google Fonts link to `index.html` for Space Mono and DM Sans
-5. **Update CSS** — Set dark background in `index.css`
-
-## Next step
-
-**Please paste the remaining portion of the component** (from the Live Stage module onward through the closing of the App component) so I can implement the complete application.
+### 3. Clear stale localStorage
+Users who already have `"3033"` saved in localStorage will keep using the wrong port. Add a one-time migration or show a note in settings that the console TX port should be 3032, not 3033.
 
