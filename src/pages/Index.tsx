@@ -823,6 +823,7 @@ export default function App() {
           }
 
           if (data.subtype === "cue_property") {
+            cuesLiveFlag = true;
             cuePropertyUpdates.push(data);
           }
           break;
