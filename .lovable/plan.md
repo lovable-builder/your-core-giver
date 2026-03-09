@@ -1,39 +1,53 @@
 
 
-# Plan: Implement ETC Console AI Main Component
+## Problem
 
-## What happened
-You pasted a large single-file React component for the ETC Console AI app, but **the code is truncated** — it cuts off mid-render inside the "LIVE STAGE" module at `{channels.filter(c => c.in`. The component cannot be implemented as-is because the JSX is incomplete.
+The Live Stage section is full of fake/simulated data that doesn't reflect the real console state. From the screenshot: patch shows empty fields, channels show random colors, cue stack has only placeholder data, and submaster faders have random values with hardcoded labels.
 
-## What I can see
-The pasted code contains:
-- **ParticleField** — canvas-based animated background
-- **SpectrumBar** — audio-style visualizer bars
-- **GlowButton** — styled button with glow effects
-- **StepCard** — console instruction step cards
-- **OscCard** — OSC command sender cards
-- **FixtureGrid** — channel color/intensity visualizer
-- **CueStack** — cue list with active highlight
-- **CommandLog** — scrollable OSC command log
-- **Main App** — three modules: AI Guide, OSC Control, Live Stage
+### What's fake and needs fixing
 
-All use inline styles (no Tailwind), and the AI Guide calls the Anthropic API directly from the client (which exposes the API key — should use Lovable AI via edge function instead).
+1. **Channels array** (line 1008-1016) — hardcoded 32 channels with random intensities and colors. Should start empty and populate from console patch/level data.
 
-## Issues to resolve before implementing
+2. **Channel animation timer** (line 1042-1050) — randomly wiggles channel intensities every 800ms. Pure visual fake.
 
-1. **Incomplete code** — The "LIVE STAGE" module JSX is cut off. I need the rest of the component to implement it fully.
-2. **JSX syntax** — The pasted code has bare `<div>` tags without className/style attributes in many places (likely stripped during copy). This will need reconstruction.
-3. **Direct Anthropic API call** — The `fetchSteps` function calls `api.anthropic.com` directly from the browser, which is insecure and won't work due to CORS. Should be routed through Lovable AI (edge function).
+3. **Fader values** (line 1021-1026) — 8 hardcoded submasters with random values and fake labels ("Wash", "Spot", etc.). Should come from console sub data.
 
-## Proposed approach (once complete code is provided)
+4. **"FULL STAGE" / "BLACKOUT" / "RANDOM" buttons** (lines 2657-2681) — only modify local state, don't send OSC to the console. RANDOM is entirely fake.
 
-1. **Create `src/pages/Index.tsx`** — Convert the full component into a properly typed TypeScript React component
-2. **Split into sub-components** — Place helpers (ParticleField, GlowButton, StepCard, OscCard, etc.) into `src/components/` files
-3. **Replace Anthropic direct call** — Use Lovable AI gateway via an edge function for the AI Guide module
-4. **Load fonts** — Add Google Fonts link to `index.html` for Space Mono and DM Sans
-5. **Update CSS** — Set dark background in `index.css`
+5. **GO/BACK in cue stack** (lines 2748-2778) — fire `/eos/cue/{id}/fire` per cue instead of using the proper `/eos/key/go` and `/eos/key/back` global commands.
 
-## Next step
+6. **Channel header** says "32 CHANNELS" hardcoded — should reflect actual channel count from patch.
 
-**Please paste the remaining portion of the component** (from the Live Stage module onward through the closing of the App component) so I can implement the complete application.
+### Fixes
+
+#### `src/pages/Index.tsx`
+
+**A. Channels — start empty, populate from bridge data**
+- Change channel init to empty array: `useState([])`
+- Remove the random animation `setInterval` (lines 1042-1050)
+- When `channel_intensity` data arrives, add new channels if they don't exist (currently only updates existing ones)
+- Channel grid header: show `channels.length` instead of hardcoded "32"
+
+**B. Faders — start empty, populate from bridge sub data**
+- Change fader init to empty array
+- When the bridge sends `sub` data, populate fader labels and values
+- If no sub data available, show "No submasters received" empty state
+- Keep the click-to-set interaction (it already sends proper OSC via `/eos/sub/{i}/level`)
+
+**C. Remove fake buttons**
+- Remove "RANDOM" button entirely (fake)
+- "FULL STAGE" → send OSC command: `/eos/newcmd` with "Chan 1 Thru 9999 Full Enter"
+- "BLACKOUT" → send OSC command: `/eos/newcmd` with "Chan 1 Thru 9999 Out Enter"
+
+**D. Fix GO/BACK buttons**
+- GO → send `/eos/key/go` (global key, no cue number needed)
+- BACK → send `/eos/key/back`
+- Don't manually set `activeCue` — let the console feedback update it
+
+**E. Channel update logic**
+- When `channel_intensity` arrives with a channel not in the array, add it
+- This ensures the channel grid grows to match the actual console
+
+### Files to change
+- `src/pages/Index.tsx` — all changes above
 
