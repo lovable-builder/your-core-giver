@@ -1005,15 +1005,7 @@ export default function App() {
   }, [wsConnected, sendBridgeMessage]);
 
   // Live state
-  const [channels, setChannels] = useState(() =>
-    Array.from({ length: 32 }, (_, i) => ({
-      id: i + 1,
-      intensity: Math.random() > 0.6 ? Math.floor(Math.random() * 100) : 0,
-      r: 255,
-      g: 140 + Math.random() * 80,
-      b: 40 + Math.random() * 60,
-    })),
-  );
+  const [channels, setChannels] = useState<Array<{ id: number; intensity: number; r: number; g: number; b: number }>>([]);
   const [cues, setCues] = useState<Array<{ id: string; label: string; time: string; upTime: string | null; downTime: string | null }>>([]);
   const [cuesLive, setCuesLive] = useState(false);
   const [activeCue, setActiveCue] = useState(null);
