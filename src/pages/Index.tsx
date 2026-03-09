@@ -843,8 +843,7 @@ export default function App() {
               ? data.data
               : [];
           if (pd.length) {
-            if (data.type === "patch_complete") patchSnapshot = pd;
-            else patchUpdates.push(...pd);
+            patchUpdates.push(...pd);
           }
           break;
         }
