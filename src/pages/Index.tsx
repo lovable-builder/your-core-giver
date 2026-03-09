@@ -670,6 +670,7 @@ export default function App() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedConsole, setSelectedConsole] = useState(null);
+  const [elevenLabsAgentId, setElevenLabsAgentId] = useState(() => localStorage.getItem("elevenlabs_agent_id") || "");
   const [pendingPrompt, setPendingPrompt] = useState(null);
   const [steps, setSteps] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
