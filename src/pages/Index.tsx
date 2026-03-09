@@ -1668,18 +1668,34 @@ export default function App() {
                   </div>
                 )}
                 {steps && (
-                  <div className="console-steps-grid">
-                    {steps.map((step, i) => (
-                      <ConsoleButton
-                        key={i}
-                        label={step.button}
-                        zone={step.zone}
-                        color={step.color}
-                        isActive={activeStep === i}
-                        description={step.desc}
-                        className={activeStep === i ? "active" : ""}
-                      />
-                    ))}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <ConsoleSteps3D
+                      steps={steps}
+                      activeIndex={activeStep}
+                      onActiveIndexChange={setActiveStep}
+                      height={260}
+                      className="rounded-xl"
+                    />
+
+                    {/* Active step info (keeps the descriptive text you had under each button) */}
+                    <div
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: "12px",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        background: "rgba(0,0,0,0.22)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                      }}
+                    >
+                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.12em", color: "#666" }}>
+                        {(steps[activeStep]?.zone || "").toUpperCase()}
+                      </div>
+                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "#cfcfcf" }}>
+                        {steps[activeStep]?.desc}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
