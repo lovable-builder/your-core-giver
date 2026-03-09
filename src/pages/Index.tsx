@@ -2756,12 +2756,18 @@ export default function App() {
                 SUBMASTER FADERS
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: "12px" }}>
-                {["Wash", "Spot", "Fill", "Back", "Effects", "Practicals", "Haze", "Master"].map((label, i) => {
-                  const val = faderVals[i];
+                {faderVals.length === 0 ? (
+                  <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "20px" }}>
+                    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#444" }}>
+                      NO SUBMASTERS — connect to console to populate
+                    </span>
+                  </div>
+                ) : faderVals.map((val, i) => {
+                  const label = faderLabels[i] || `SUB ${i + 1}`;
                   const setVal = (newVal: number) => setFaderVals(prev => prev.map((v, j) => j === i ? newVal : v));
                   return (
                     <div
-                      key={label}
+                      key={i}
                       style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}
                     >
                       <div
@@ -2789,10 +2795,7 @@ export default function App() {
                             left: 0,
                             right: 0,
                             height: `${val}%`,
-                            background:
-                              i === 7
-                                ? "linear-gradient(to top, #FF6B2B, #FF3D00)"
-                                : `linear-gradient(to top, hsl(${20 + i * 15}, 80%, 50%), hsl(${30 + i * 15}, 90%, 60%))`,
+                            background: `linear-gradient(to top, hsl(${20 + i * 15}, 80%, 50%), hsl(${30 + i * 15}, 90%, 60%))`,
                             transition: "height 0.1s",
                             boxShadow: val > 0 ? `0 0 10px rgba(255,107,43,0.3)` : "none",
                           }}
