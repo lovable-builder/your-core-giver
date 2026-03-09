@@ -45,7 +45,7 @@ const dgram = require("dgram");
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const WS_PORT = parseInt(process.env.PORT || "8080", 10);
 const HTTP_PORT = parseInt(process.env.HTTP_PORT || "8081", 10);
-const EOS_HOST = process.env.EOS_HOST || "auto";
+const EOS_HOST = process.env.EOS_HOST || "127.0.0.1";
 const EOS_PORT = parseInt(process.env.EOS_PORT || "3032", 10);
 const EOS_RX_PORT = parseInt(process.env.EOS_RX_PORT || "3033", 10);
 const EOS_USER = process.env.EOS_USER || "1";
@@ -116,7 +116,10 @@ console.log(`  ${C.white}Eos User${C.reset}    ${EOS_USER}\n`);
 // ── PATH HELPERS ──────────────────────────────────────────────────────────────
 function withUser(path) {
   if (!path) return path;
-  if (path.startsWith("/eos/user/")) return path;
+  if (path.startsWith("/eos/user/")) return path; // already prefixed
+  if (path.startsWith("/eos/get/")) return path; // GET paths are always global
+  if (path.startsWith("/eos/ping")) return path; // ping is global
+  if (path.startsWith("/eos/key/")) return path; // key presses are global
   if (path.startsWith("/eos")) return `/eos/user/${EOS_USER}${path.slice(4)}`;
   return path;
 }
@@ -147,8 +150,11 @@ udpPort.on("error", (err) => {
 
 // ── RATE-LIMITED QUEUE ────────────────────────────────────────────────────────
 function enqueue(oscMsg, host, port, priority = false) {
-  if (priority) msgQueue.unshift({ oscMsg, host, port });
-  else msgQueue.push({ oscMsg, host, port });
+  // Always ensure host is a clean IP string before queueing
+  const safeHost = typeof host === "string" && host.trim().length > 6 ? host.trim() : "127.0.0.1";
+  const safePort = typeof port === "number" && port > 0 ? port : EOS_PORT;
+  if (priority) msgQueue.unshift({ oscMsg, host: safeHost, port: safePort });
+  else msgQueue.push({ oscMsg, host: safeHost, port: safePort });
   if (!queueBusy) drain();
 }
 function drain() {
@@ -176,11 +182,16 @@ setInterval(() => {
 }, 1000);
 
 function sendOSC(address, args = [], host, port, priority = false) {
-  const h = host || consoleHost;
+  let h = host || consoleHost;
   const p = port || consolePort;
   if (!h) {
     logWn(`No console host yet — dropped: ${address}`);
     return;
+  }
+  // Sanitize host — ensure it's a valid IP string, not truncated
+  if (typeof h !== "string" || !h.match(/^[\d.]+$/)) {
+    logWn(`Invalid host "${h}" — using 127.0.0.1`);
+    h = "127.0.0.1";
   }
   enqueue({ address, args }, h, p, priority);
 }
@@ -535,8 +546,8 @@ function buildOsc(msg) {
       return { address: withUser(path), args: [{ type: "s", value: String(value) }] };
     return { address: withUser(path), args: [] };
   }
-  const globalPaths = ["/eos/get/patch", "/eos/ping", "/eos/get/show"];
-  const address = globalPaths.some((gp) => path.startsWith(gp)) ? path : withUser(path);
+  // withUser already handles global path exclusions (GET, ping, key)
+  const address = withUser(path);
   const typedArgs = [];
   if (value !== undefined && value !== null && value !== "") {
     const num = Number(value);
