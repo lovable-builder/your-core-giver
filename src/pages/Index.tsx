@@ -2639,29 +2639,18 @@ export default function App() {
                 }}
               >
                 <GlowButton
-                  onClick={() => setChannels((prev) => prev.map((c) => ({ ...c, intensity: 100 })))}
+                  onClick={() => sendOsc("/eos/newcmd", "Chan 1 Thru 9999 Full Enter")}
                   active
                   style={{ flex: 1 }}
                 >
                   FULL STAGE
                 </GlowButton>
                 <GlowButton
-                  onClick={() => setChannels((prev) => prev.map((c) => ({ ...c, intensity: 0 })))}
+                  onClick={() => sendOsc("/eos/newcmd", "Chan 1 Thru 9999 Out Enter")}
                   color="#ef4444"
                   style={{ flex: 1 }}
                 >
                   BLACKOUT
-                </GlowButton>
-                <GlowButton
-                  onClick={() =>
-                    setChannels((prev) =>
-                      prev.map((c) => ({ ...c, intensity: Math.random() > 0.4 ? Math.floor(Math.random() * 100) : 0 })),
-                    )
-                  }
-                  color="#8b5cf6"
-                  style={{ flex: 1 }}
-                >
-                  RANDOM
                 </GlowButton>
               </div>
             </div>
