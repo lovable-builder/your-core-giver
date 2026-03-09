@@ -2099,9 +2099,10 @@ export default function App() {
 
             {/* ── AI AGENT PROMPT BAR ── */}
             <div
+              className="neon-panel"
               style={{
-                background: "rgba(255,107,43,0.04)",
-                border: "1px solid rgba(255,107,43,0.15)",
+                background: "rgba(0,255,200,0.02)",
+                border: "1px solid rgba(0,255,200,0.12)",
                 borderRadius: "14px",
                 padding: "16px 20px",
                 display: "flex",
@@ -2112,8 +2113,8 @@ export default function App() {
               {/* Header row */}
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <span style={{ fontSize: "16px" }}>🤖</span>
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#FF6B2B", letterSpacing: "0.12em", flex: 1 }}>
-                  AI OSC AGENT — Natural Language to Console Commands
+                <span style={{ fontFamily: "'Orbitron', 'Space Mono', monospace", fontSize: "10px", color: "#00ffc8", letterSpacing: "0.12em", flex: 1 }}>
+                  AI OSC AGENT — VOICE & TEXT TO CONSOLE
                 </span>
                 {/* Preview mode toggle */}
                 <div
