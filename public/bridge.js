@@ -550,8 +550,13 @@ function parseIncoming(oscMsg, rinfo) {
 udpPort.on("message", (oscMsg, rinfo) => {
   try {
     const parsed = parseIncoming(oscMsg, rinfo);
-    broadcast(parsed);
-    logRX(oscMsg.address, JSON.stringify(normalizeArgs(oscMsg.args)));
+    if (parsed) {
+      broadcast(parsed);
+    }
+    // Only log non-patch traffic to reduce noise
+    if (!oscMsg.address?.includes("/patch/")) {
+      logRX(oscMsg.address, JSON.stringify(normalizeArgs(oscMsg.args)));
+    }
   } catch (err) {
     logEr(`RX parse: ${err.message}`);
   }
