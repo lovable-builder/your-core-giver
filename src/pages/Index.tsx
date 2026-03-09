@@ -1346,11 +1346,11 @@ export default function App() {
           position: "sticky",
           top: 0,
           zIndex: 100,
-          background: "rgba(6,6,8,0.85)",
-          backdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(255,107,43,0.1)",
+          background: "rgba(2,2,8,0.9)",
+          backdropFilter: "blur(24px) saturate(180%)",
+          borderBottom: "1px solid rgba(0,255,200,0.08)",
           padding: "0 24px",
-          height: "56px",
+          height: "60px",
           display: "flex",
           alignItems: "center",
           gap: "0",
@@ -1360,36 +1360,37 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginRight: "32px" }}>
           <div
             style={{
-              width: "34px",
-              height: "34px",
-              borderRadius: "8px",
-              background: "linear-gradient(135deg, #FF6B2B 0%, #FF3D00 100%)",
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
+              background: "linear-gradient(135deg, #FF6B2B 0%, #00ffc8 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 0 20px rgba(255,107,43,0.4)",
+              boxShadow: "0 0 24px rgba(0,255,200,0.3), 0 0 48px rgba(255,107,43,0.2)",
               fontSize: "18px",
               flexShrink: 0,
+              animation: "hex-rotate 20s linear infinite",
             }}
           >
             ⚡
           </div>
           <div>
             <div
+              className="holo-text"
               style={{
-                fontFamily: "'Space Mono', monospace",
-                fontWeight: "700",
-                fontSize: "13px",
-                color: "#fff",
-                letterSpacing: "0.08em",
+                fontFamily: "'Orbitron', 'Space Mono', monospace",
+                fontWeight: "900",
+                fontSize: "14px",
+                letterSpacing: "0.12em",
               }}
             >
-              EOS<span style={{ color: "#FF6B2B" }}>AI</span>
+              EOS<span>AI</span>
             </div>
             <div
-              style={{ fontFamily: "'Space Mono', monospace", fontSize: "8px", color: "#444", letterSpacing: "0.15em" }}
+              style={{ fontFamily: "'Space Mono', monospace", fontSize: "8px", color: "#00ffc866", letterSpacing: "0.2em" }}
             >
-              CONSOLE INTELLIGENCE
+              CONSOLE INTELLIGENCE v2.0
             </div>
           </div>
         </div>
