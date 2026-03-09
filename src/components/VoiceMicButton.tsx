@@ -54,7 +54,6 @@ export default function VoiceMicButton({ onResult, disabled }: VoiceMicButtonPro
         width: "42px",
         height: "42px",
         borderRadius: "8px",
-        border: "none",
         background: listening
           ? "linear-gradient(135deg, #00ffc8, #00cc9e)"
           : disabled
@@ -70,9 +69,11 @@ export default function VoiceMicButton({ onResult, disabled }: VoiceMicButtonPro
         boxShadow: listening
           ? "0 0 20px rgba(0,255,200,0.6), 0 0 40px rgba(0,255,200,0.2)"
           : "none",
-        borderWidth: listening ? "0" : "1px",
+        animation: listening ? "pulse-glow 1.5s ease-in-out infinite" : "none",
+        borderWidth: listening ? "0px" : "1px",
         borderStyle: "solid",
         borderColor: listening ? "transparent" : "rgba(0,255,200,0.2)",
+      }}
     >
       {listening ? (
         <span style={{ display: "flex", gap: "2px", alignItems: "center" }}>
