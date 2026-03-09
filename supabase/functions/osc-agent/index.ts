@@ -33,8 +33,10 @@ Effects:
 - Stop: /eos/newcmd "Chan {a} Effect Stop Enter"
 - Record FX: /eos/newcmd "Effect {a} Record Enter"
 
-Patching:
-- Patch Mode: /eos/key/patch
+Patching (IMPORTANT: For ANY patching command, ALWAYS return THREE commands in this exact order):
+1. { "path": "/eos/key/patch", "description": "Enter patch mode" }
+2. { "path": "/eos/newcmd", "value": "Chan {a} Address {b} Enter", "description": "..." }
+3. { "path": "/eos/key/live", "description": "Return to live mode" }
 - Address: /eos/newcmd "Chan {a} Address {b} Enter"
 - Unpatch: /eos/newcmd "Chan {a} Address 0 Enter"
 - Universe: /eos/newcmd "Chan {a} Address {b}/{c} Enter"

@@ -1068,7 +1068,7 @@ wss.on("connection", (ws, req) => {
       }
       // Enter patch mode first
       sendOSC("/eos/key/patch", [], host, port, true);
-      let delay = 300;
+      let delay = 400;
       if (fixtureType) {
         setTimeout(
           () =>

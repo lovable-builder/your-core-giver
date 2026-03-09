@@ -1197,10 +1197,29 @@ export default function App() {
         commands 
       }]);
       
-      // Execute commands sequentially with small delay
-      for (let i = 0; i < commands.length; i++) {
-        const cmd = commands[i];
-        if (i > 0) await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay between commands
+      // Patch-mode safety net: detect patch-related newcmd values and wrap with /eos/key/patch + /eos/key/live
+      const patchPattern = /\b(Address|Type|Unpatch)\b/i;
+      const hasPatchCommands = commands.some((cmd: any) => 
+        cmd.path === "/eos/newcmd" && patchPattern.test(cmd.value || "")
+      );
+      const alreadyHasPatchKey = commands.some((cmd: any) => cmd.path === "/eos/key/patch");
+      
+      let finalCommands = commands;
+      if (hasPatchCommands && !alreadyHasPatchKey) {
+        // Wrap: insert /eos/key/patch before first patch cmd and /eos/key/live after last
+        finalCommands = [
+          { path: "/eos/key/patch", description: "Enter patch mode" },
+          ...commands,
+          { path: "/eos/key/live", description: "Return to live mode" },
+        ];
+      }
+      
+      const delayMs = hasPatchCommands ? 400 : 200;
+      
+      // Execute commands sequentially with appropriate delay
+      for (let i = 0; i < finalCommands.length; i++) {
+        const cmd = finalCommands[i];
+        if (i > 0) await new Promise(resolve => setTimeout(resolve, delayMs));
         sendOsc(cmd.path, cmd.value);
       }
       
