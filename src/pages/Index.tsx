@@ -754,7 +754,6 @@ export default function App() {
     let newActiveCue: string | null = null;
     let channelUpdates: any[] = [];
     let patchUpdates: any[] = [];
-    let patchSnapshot: any[] | null = null;
     let cueUpdates: any[] = [];
     let cuePropertyUpdates: any[] = [];
     let subUpdates: any[] = [];
@@ -789,8 +788,7 @@ export default function App() {
           if (data.subtype === "patch" || data.subtype === "patch_complete") {
             const pd = Array.isArray(data.patch) ? data.patch : [];
             if (pd.length > 0) {
-              if (data.subtype === "patch_complete") patchSnapshot = pd;
-              else patchUpdates.push(...pd);
+              patchUpdates.push(...pd);
             }
           }
 
@@ -845,8 +843,7 @@ export default function App() {
               ? data.data
               : [];
           if (pd.length) {
-            if (data.type === "patch_complete") patchSnapshot = pd;
-            else patchUpdates.push(...pd);
+            patchUpdates.push(...pd);
           }
           break;
         }
@@ -902,9 +899,8 @@ export default function App() {
       });
     }
 
-    if (patchSnapshot || patchUpdates.length > 0) {
-      const incomingRaw = patchSnapshot ?? patchUpdates;
-      const incoming = incomingRaw
+    if (patchUpdates.length > 0) {
+      const incoming = patchUpdates
         .map((p: any) => ({
           channel: Number(p.channel ?? p.chan),
           universe: Number(p.universe ?? p.uni ?? 1),
@@ -916,9 +912,7 @@ export default function App() {
 
       setConsolePatch(prev => {
         const next = new Map<number, any>();
-        if (!patchSnapshot) {
-          prev.forEach((p) => next.set(p.channel, p));
-        }
+        prev.forEach((p) => next.set(p.channel, p));
         incoming.forEach((p: any) => next.set(p.channel, p));
         return Array.from(next.values()).sort((a, b) => a.channel - b.channel);
       });
