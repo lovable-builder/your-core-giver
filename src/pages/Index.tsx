@@ -1596,6 +1596,10 @@ export default function App() {
                         <span style={{ color: "#444" }}>
                           thinking<span style={{ animation: "shimmer 1s infinite" }}>...</span>
                         </span>
+                      ) : msg.role === "assistant" ? (
+                        <div className="prose prose-sm prose-invert max-w-none" style={{ fontSize: "13px", lineHeight: "1.6" }}>
+                          <ReactMarkdown>{msg.text}</ReactMarkdown>
+                        </div>
                       ) : (
                         msg.text
                       )}
