@@ -793,6 +793,18 @@ export default function App() {
             cueUpdates.push(data);
           }
 
+          if (data.subtype === "cue_complete" && Array.isArray(data.cues)) {
+            cuesLiveFlag = true;
+            // Replace entire cue list with the complete batch
+            cueUpdates = data.cues.map((c: any) => ({
+              ...c,
+              cue_number: c.cue_number ?? c.id,
+              label: c.label ?? "",
+              up_time: c.up_time ?? c.upTime,
+              down_time: c.down_time ?? c.downTime,
+            }));
+          }
+
           if (data.subtype === "cue_property") {
             cuePropertyUpdates.push(data);
           }
