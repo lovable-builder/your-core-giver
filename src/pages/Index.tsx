@@ -677,7 +677,12 @@ export default function App() {
 
   // OSC state
   const [oscHost, setOscHost] = useState(() => localStorage.getItem("eos_osc_host") || "192.168.0.15");
-  const [oscPort, setOscPort] = useState(() => localStorage.getItem("eos_osc_port") || "3033");
+  const [oscPort, setOscPort] = useState(() => {
+    const saved = localStorage.getItem("eos_osc_port");
+    // Migrate stale default: 3033 was the bridge RX port, not the console TX port
+    if (saved === "3033") { localStorage.setItem("eos_osc_port", "3032"); return "3032"; }
+    return saved || "3032";
+  });
 
   // Persist target values
   useEffect(() => { localStorage.setItem("eos_osc_host", oscHost); }, [oscHost]);

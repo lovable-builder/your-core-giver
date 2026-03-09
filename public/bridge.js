@@ -119,7 +119,7 @@ function withUser(path) {
   if (path.startsWith("/eos/user/")) return path; // already prefixed
   if (path.startsWith("/eos/get/")) return path; // GET paths are always global
   if (path.startsWith("/eos/ping")) return path; // ping is global
-  if (path.startsWith("/eos/key/")) return path; // key presses are global
+  // key presses need user-scoping: /eos/user/1/key/go
   if (path.startsWith("/eos")) return `/eos/user/${EOS_USER}${path.slice(4)}`;
   return path;
 }
