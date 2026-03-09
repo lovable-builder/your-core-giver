@@ -2621,7 +2621,7 @@ export default function App() {
                     flex: 1,
                   }}
                 >
-                  CHANNEL OVERVIEW — 32 CHANNELS
+                  CHANNEL OVERVIEW — {channels.length} CHANNELS
                 </span>
                 <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#444" }}>
                   {channels.filter((c) => c.intensity > 0).length} ACTIVE
