@@ -786,8 +786,23 @@ export default function App() {
             channelUpdates.push(...data.channels);
           }
 
-          if ((data.subtype === "patch" || data.subtype === "patch_complete") && data.patch) {
-            patchData = data.patch;
+          if (data.subtype === "patch" || data.subtype === "patch_complete") {
+            const pd = Array.isArray(data.patch) ? data.patch : [];
+            if (pd.length > 0) {
+              if (data.subtype === "patch_complete") patchSnapshot = pd;
+              else patchUpdates.push(...pd);
+            }
+          }
+
+          if (data.subtype === "sub") {
+            const subs = Array.isArray(data.submasters)
+              ? data.submasters
+              : Array.isArray(data.subs)
+                ? data.subs
+                : Array.isArray(data.data)
+                  ? data.data
+                  : [];
+            if (subs.length > 0) subUpdates.push(...subs);
           }
 
           if (data.subtype === "cue_data") {
