@@ -697,6 +697,7 @@ function syncCues(ws, host, port, cueList = "1") {
     const total = Number(args.find((a) => typeof a === "number" || /^\d+$/.test(String(a))) || 0);
     udpPort.removeListener("message", onCount);
     logIn(`Fetching ${total} cues from list ${cueList}...`);
+    state.cues[cueList] = {};
 
     if (total === 0) {
       broadcast({ type: "console_feedback", subtype: "cue_complete", cue_list: cueList, cues: [], count: 0 });
@@ -715,13 +716,16 @@ function syncCues(ws, host, port, cueList = "1") {
       logIn(`Cue list ${cueList} flush — ${cues.length} cues received`);
     }, 12000);
 
-    let received = 0;
+    const seenCueEntries = new Set();
     const onCueEntry = (oscMsg2) => {
       const a2 = oscMsg2?.address || "";
-      // Match /out/get/cue/{list}/{number} — any cue entry for this list
+      // Match /out/get/cue/{list}/... except count
       if (!a2.includes(`/out/get/cue/${cueList}/`) || a2.includes("/count")) return;
-      received++;
-      if (received >= total) {
+
+      const match = a2.match(new RegExp(`/out/get/cue/${cueList}/(?:index/)?([^/]+)`));
+      if (match?.[1]) seenCueEntries.add(match[1]);
+
+      if (seenCueEntries.size >= total) {
         clearTimeout(flushTimer);
         udpPort.removeListener("message", onCueEntry);
         const entries = state.cues[cueList] || {};
