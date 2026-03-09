@@ -838,8 +838,15 @@ export default function App() {
         }
         case "patch":
         case "patch_complete": {
-          const pd = data.patch || data.data || [];
-          if (pd.length) patchData = pd;
+          const pd = Array.isArray(data.patch)
+            ? data.patch
+            : Array.isArray(data.data)
+              ? data.data
+              : [];
+          if (pd.length) {
+            if (data.type === "patch_complete") patchSnapshot = pd;
+            else patchUpdates.push(...pd);
+          }
           break;
         }
         case "pong": {
