@@ -471,7 +471,9 @@ function parseIncoming(oscMsg, rinfo) {
       raw_address: dmxAbs,
     };
     if (entry.channel !== null) state.patch[entry.channel] = entry;
-    return { type: "console_feedback", subtype: "patch_entry", ...entry, osc_address: addr, args };
+    // Accumulate patch entries — send as single batch, not per-entry
+    accumulatePatch(entry);
+    return null; // Don't broadcast individually
   }
 
   // GROUP COUNT
