@@ -632,7 +632,7 @@ function syncCues(ws, host, port, cueList = "1") {
     function nextBatch() {
       const end = Math.min(idx + bsz, total);
       for (let i = idx; i < end; i++)
-        enqueue({ address: withUser(`/eos/get/cue/${cueList}/${i}`), args: [] }, host, port);
+        enqueue({ address: withUser(`/eos/get/cue/${cueList}/index/${i}`), args: [] }, host, port);
       idx = end;
       if (idx < total) setTimeout(nextBatch, 150);
     }
