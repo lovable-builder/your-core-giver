@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 
 import ConsoleSteps3D from "@/components/ConsoleSteps3D";
+import VoiceMicButton from "@/components/VoiceMicButton";
 import VoiceAgent from "@/components/VoiceAgent";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
@@ -2275,19 +2276,13 @@ export default function App() {
                 >
                   {aiOscLoading ? "..." : aiOscPreviewMode ? "PREVIEW" : "EXECUTE"}
                 </button>
-                {/* Voice OSC Button */}
-                <VoiceAgent
-                  agentId={elevenLabsAgentId}
-                  onTranscript={(text, speaker) => {
-                    if (speaker === "user" && text.trim()) {
-                      // User spoke a command — send to AI OSC agent
-                      executeAiOscCommands(text);
-                    }
-                    if (speaker === "agent") {
-                      // Show agent response in AI OSC history
-                      setAiOscHistory(prev => [...prev, { role: "assistant", text }]);
-                    }
+                {/* Voice-to-OSC Mic Button (Web Speech API) */}
+                <VoiceMicButton
+                  onResult={(text) => {
+                    setAiOscInput(text);
+                    executeAiOscCommands(text);
                   }}
+                  disabled={aiOscLoading}
                 />
                 {aiOscHistory.length > 0 && (
                   <button
