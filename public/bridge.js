@@ -128,6 +128,27 @@ function normalizeArgs(args) {
   return args.map((a) => (a && typeof a === "object" && "value" in a ? a.value : a));
 }
 
+// ── PATCH ACCUMULATOR (batch instead of per-entry broadcast) ─────────────────
+const patchAccum = { entries: [], timer: null, FLUSH_MS: 500 };
+function flushPatch() {
+  if (patchAccum.entries.length === 0) return;
+  const payload = {
+    type: "console_feedback",
+    subtype: "patch_complete",
+    patch: patchAccum.entries.slice(),
+    count: patchAccum.entries.length,
+  };
+  broadcast(payload);
+  logIn(`Patch batch: ${patchAccum.entries.length} entries`);
+  patchAccum.entries = [];
+  patchAccum.timer = null;
+}
+function accumulatePatch(entry) {
+  patchAccum.entries.push(entry);
+  if (patchAccum.timer) clearTimeout(patchAccum.timer);
+  patchAccum.timer = setTimeout(flushPatch, patchAccum.FLUSH_MS);
+}
+
 // ── UDP PORT ──────────────────────────────────────────────────────────────────
 const udpPort = new osc.UDPPort({
   localAddress: "0.0.0.0",
