@@ -117,9 +117,9 @@ console.log(`  ${C.white}Eos User${C.reset}    ${EOS_USER}\n`);
 function withUser(path) {
   if (!path) return path;
   if (path.startsWith("/eos/user/")) return path; // already prefixed
-  if (path.startsWith("/eos/get/")) return path; // GET paths are always global
+  if (path.startsWith("/eos/get/")) return path; // GET paths are always global — no user prefix
   if (path.startsWith("/eos/ping")) return path; // ping is global
-  // key presses need user-scoping: /eos/user/1/key/go
+  if (path.startsWith("/eos/key/")) return path; // key presses are global — /eos/key/go NOT /eos/user/1/key/go
   if (path.startsWith("/eos")) return `/eos/user/${EOS_USER}${path.slice(4)}`;
   return path;
 }
@@ -588,7 +588,7 @@ function buildOsc(msg) {
 function syncShowInfo() {
   sendOSC("/eos/get/show/name", [], null, null, true);
   sendOSC("/eos/get/version", [], null, null, true);
-  sendOSC(withUser("/eos/get/cue/1/count"), []);
+  sendOSC("/eos/get/cue/1/count", []); // GET paths are always global
   sendOSC("/eos/get/patch/count", []);
   logIn("Show info sync requested");
 }
@@ -627,12 +627,49 @@ function syncCues(ws, host, port, cueList = "1") {
     const total = Number(args.find((a) => typeof a === "number" || /^\d+$/.test(String(a))) || 0);
     udpPort.removeListener("message", onCount);
     logIn(`Fetching ${total} cues from list ${cueList}...`);
+
+    if (total === 0) {
+      broadcast({ type: "console_feedback", subtype: "cue_complete", cue_list: cueList, cues: [], count: 0 });
+      ws && ws.send(JSON.stringify({ ok: true, type: "cue_complete", cue_list: cueList, count: 0 }));
+      return;
+    }
+
+    // Flush complete list after a timeout regardless of how many arrived
+    const flushTimer = setTimeout(() => {
+      udpPort.removeListener("message", onCueEntry);
+      const entries = state.cues[cueList] || {};
+      const cues = Object.entries(entries)
+        .sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]))
+        .map(([num, data]) => ({ cue_number: num, ...data }));
+      broadcast({ type: "console_feedback", subtype: "cue_complete", cue_list: cueList, cues, count: cues.length });
+      logIn(`Cue list ${cueList} flush — ${cues.length} cues received`);
+    }, 12000);
+
+    let received = 0;
+    const onCueEntry = (oscMsg2) => {
+      const a2 = oscMsg2?.address || "";
+      // Match /out/get/cue/{list}/{number} — any cue entry for this list
+      if (!a2.includes(`/out/get/cue/${cueList}/`) || a2.includes("/count")) return;
+      received++;
+      if (received >= total) {
+        clearTimeout(flushTimer);
+        udpPort.removeListener("message", onCueEntry);
+        const entries = state.cues[cueList] || {};
+        const cues = Object.entries(entries)
+          .sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]))
+          .map(([num, data]) => ({ cue_number: num, ...data }));
+        broadcast({ type: "console_feedback", subtype: "cue_complete", cue_list: cueList, cues, count: cues.length });
+        logIn(`Cue list ${cueList} complete — ${cues.length} cues`);
+      }
+    };
+    udpPort.on("message", onCueEntry);
+
+    // Fetch by index — GET paths are always global, no user prefix
     const bsz = 10;
     let idx = 0;
     function nextBatch() {
       const end = Math.min(idx + bsz, total);
-      for (let i = idx; i < end; i++)
-        enqueue({ address: withUser(`/eos/get/cue/${cueList}/index/${i}`), args: [] }, host, port);
+      for (let i = idx; i < end; i++) enqueue({ address: `/eos/get/cue/${cueList}/${i}`, args: [] }, host, port);
       idx = end;
       if (idx < total) setTimeout(nextBatch, 150);
     }
@@ -640,8 +677,9 @@ function syncCues(ws, host, port, cueList = "1") {
   };
   udpPort.on("message", onCount);
   setTimeout(() => udpPort.removeListener("message", onCount), 10000);
-  sendOSC(withUser(`/eos/get/cue/${cueList}/count`), [], host, port, true);
-  ws.send(JSON.stringify({ ok: true, type: "request_cues", cueList }));
+  // GET paths are always global — no withUser
+  sendOSC(`/eos/get/cue/${cueList}/count`, [], host, port, true);
+  ws && ws.send(JSON.stringify({ ok: true, type: "request_cues", cueList }));
 }
 
 function syncGroups(host, port) {
@@ -704,7 +742,7 @@ function syncAll(ws, host, port) {
   setTimeout(() => syncPalettes(host, port), 2400);
   setTimeout(() => syncEffects(host, port), 3200);
   setTimeout(() => syncMacros(host, port), 4000);
-  setTimeout(() => sendOSC(withUser("/eos/get/chans/1/512"), [], host, port), 4800);
+  setTimeout(() => sendOSC("/eos/get/chans/1/512", [], host, port), 4800); // GET = global
 }
 
 // ── WEBSOCKET SERVER ──────────────────────────────────────────────────────────
@@ -767,7 +805,7 @@ wss.on("connection", (ws, req) => {
       return;
     }
     if (msg.type === "request_levels") {
-      sendOSC(withUser(`/eos/get/chans/${msg.from || 1}/${msg.to || 512}`), [], host, port);
+      sendOSC(`/eos/get/chans/${msg.from || 1}/${msg.to || 512}`, [], host, port); // GET = global
       ws.send(JSON.stringify({ ok: true, type: "request_levels" }));
       return;
     }
@@ -856,6 +894,171 @@ wss.on("connection", (ws, req) => {
       });
       setTimeout(() => sendOSC("/eos/key/live", [], host, port), delay);
       ws.send(JSON.stringify({ ok: true, type: "auto_patch", count: msg.fixtures.length }));
+      return;
+    }
+
+    // ── FIRE CUE ───────────────────────────────────────────────────────────────
+    if (msg.type === "fire_cue") {
+      const { cue, cueList = "1" } = msg;
+      if (!cue) {
+        ws.send(JSON.stringify({ error: "fire_cue requires cue number" }));
+        return;
+      }
+      sendOSC(withUser("/eos/newcmd"), [{ type: "s", value: `Cue ${cueList}/${cue} Go Enter` }], host, port, true);
+      ws.send(JSON.stringify({ ok: true, type: "fire_cue", cue, cueList }));
+      logIn(`Fire cue ${cueList}/${cue}`);
+      return;
+    }
+
+    // ── CUE OPERATIONS ─────────────────────────────────────────────────────────
+    if (msg.type === "cue_go") {
+      sendOSC("/eos/key/go", [], host, port, true);
+      ws.send(JSON.stringify({ ok: true, type: "cue_go" }));
+      return;
+    }
+    if (msg.type === "cue_back") {
+      sendOSC("/eos/key/back", [], host, port, true);
+      ws.send(JSON.stringify({ ok: true, type: "cue_back" }));
+      return;
+    }
+    if (msg.type === "cue_stop") {
+      sendOSC("/eos/key/stop_back", [], host, port, true);
+      ws.send(JSON.stringify({ ok: true, type: "cue_stop" }));
+      return;
+    }
+
+    // ── RECORD CUE ─────────────────────────────────────────────────────────────
+    if (msg.type === "record_cue") {
+      const { cue, cueList = "1", label, upTime, downTime } = msg;
+      if (!cue) {
+        ws.send(JSON.stringify({ error: "record_cue requires cue number" }));
+        return;
+      }
+      sendOSC(withUser("/eos/newcmd"), [{ type: "s", value: `Cue ${cueList}/${cue} Record Enter` }], host, port);
+      if (label)
+        setTimeout(
+          () =>
+            sendOSC(
+              withUser("/eos/newcmd"),
+              [{ type: "s", value: `Cue ${cueList}/${cue} Label ${label} Enter` }],
+              host,
+              port,
+            ),
+          200,
+        );
+      if (upTime)
+        setTimeout(
+          () =>
+            sendOSC(
+              withUser("/eos/newcmd"),
+              [{ type: "s", value: `Cue ${cueList}/${cue} Time ${upTime} Enter` }],
+              host,
+              port,
+            ),
+          400,
+        );
+      if (downTime)
+        setTimeout(
+          () =>
+            sendOSC(
+              withUser("/eos/newcmd"),
+              [{ type: "s", value: `Cue ${cueList}/${cue} OutTime ${downTime} Enter` }],
+              host,
+              port,
+            ),
+          600,
+        );
+      ws.send(JSON.stringify({ ok: true, type: "record_cue", cue, cueList }));
+      return;
+    }
+
+    // ── DELETE CUE ─────────────────────────────────────────────────────────────
+    if (msg.type === "delete_cue") {
+      const { cue, cueList = "1" } = msg;
+      if (!cue) {
+        ws.send(JSON.stringify({ error: "delete_cue requires cue number" }));
+        return;
+      }
+      // Double Enter confirms deletion
+      sendOSC(withUser("/eos/newcmd"), [{ type: "s", value: `Cue ${cueList}/${cue} Delete Enter Enter` }], host, port);
+      ws.send(JSON.stringify({ ok: true, type: "delete_cue", cue, cueList }));
+      return;
+    }
+
+    // ── PATCH CHANNEL ──────────────────────────────────────────────────────────
+    if (msg.type === "patch_channel") {
+      const { channel, dmxAddress, universe = 1, fixtureType, label } = msg;
+      if (!channel) {
+        ws.send(JSON.stringify({ error: "patch_channel requires channel number" }));
+        return;
+      }
+      // Enter patch mode first
+      sendOSC("/eos/key/patch", [], host, port, true);
+      let delay = 300;
+      if (fixtureType) {
+        setTimeout(
+          () =>
+            sendOSC(
+              withUser("/eos/newcmd"),
+              [{ type: "s", value: `Chan ${channel} Type ${fixtureType} Enter` }],
+              host,
+              port,
+            ),
+          delay,
+        );
+        delay += 400;
+      }
+      if (dmxAddress) {
+        const fullAddr = universe > 1 ? `${universe}/${dmxAddress}` : `${dmxAddress}`;
+        setTimeout(
+          () =>
+            sendOSC(
+              withUser("/eos/newcmd"),
+              [{ type: "s", value: `Chan ${channel} Address ${fullAddr} Enter` }],
+              host,
+              port,
+            ),
+          delay,
+        );
+        delay += 400;
+      }
+      if (label) {
+        setTimeout(
+          () =>
+            sendOSC(
+              withUser("/eos/newcmd"),
+              [{ type: "s", value: `Chan ${channel} Label ${label} Enter` }],
+              host,
+              port,
+            ),
+          delay,
+        );
+        delay += 400;
+      }
+      // Return to live
+      setTimeout(() => sendOSC("/eos/key/live", [], host, port), delay);
+      ws.send(JSON.stringify({ ok: true, type: "patch_channel", channel }));
+      return;
+    }
+
+    // ── UNPATCH CHANNEL ────────────────────────────────────────────────────────
+    if (msg.type === "unpatch_channel") {
+      const { channel } = msg;
+      sendOSC("/eos/key/patch", [], host, port, true);
+      setTimeout(
+        () => sendOSC(withUser("/eos/newcmd"), [{ type: "s", value: `Chan ${channel} Unpatch Enter` }], host, port),
+        300,
+      );
+      setTimeout(() => sendOSC("/eos/key/live", [], host, port), 700);
+      ws.send(JSON.stringify({ ok: true, type: "unpatch_channel", channel }));
+      return;
+    }
+
+    // ── LABEL CHANNEL ──────────────────────────────────────────────────────────
+    if (msg.type === "label_channel") {
+      const { channel, label } = msg;
+      sendOSC(withUser("/eos/newcmd"), [{ type: "s", value: `Chan ${channel} Label ${label} Enter` }], host, port);
+      ws.send(JSON.stringify({ ok: true, type: "label_channel", channel }));
       return;
     }
 
