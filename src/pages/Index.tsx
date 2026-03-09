@@ -1723,7 +1723,53 @@ export default function App() {
                 >
                   →
                 </button>
+                <VoiceAgent
+                  agentId={elevenLabsAgentId}
+                  onTranscript={(text, speaker) => {
+                    setMessages((prev) => [
+                      ...prev,
+                      { role: speaker === "user" ? "user" : "assistant", text },
+                    ]);
+                  }}
+                />
               </div>
+              {/* Agent ID config */}
+              {!elevenLabsAgentId && (
+                <div style={{
+                  padding: "8px 16px 12px",
+                  borderTop: "1px solid rgba(255,255,255,0.04)",
+                  display: "flex",
+                  gap: "6px",
+                  alignItems: "center",
+                }}>
+                  <input
+                    placeholder="ElevenLabs Agent ID"
+                    style={{
+                      flex: 1,
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "6px",
+                      padding: "6px 10px",
+                      color: "#e0e0e0",
+                      fontSize: "11px",
+                      fontFamily: "'Space Mono', monospace",
+                      outline: "none",
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val) {
+                          setElevenLabsAgentId(val);
+                          localStorage.setItem("elevenlabs_agent_id", val);
+                        }
+                      }
+                    }}
+                  />
+                  <span style={{ fontSize: "10px", color: "#666", fontFamily: "'Space Mono', monospace" }}>
+                    Press Enter to save
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Steps Panel */}
