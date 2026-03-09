@@ -753,9 +753,11 @@ export default function App() {
     let feedbackUpdate: Record<string, any> = {};
     let newActiveCue: string | null = null;
     let channelUpdates: any[] = [];
-    let patchData: any[] | null = null;
+    let patchUpdates: any[] = [];
+    let patchSnapshot: any[] | null = null;
     let cueUpdates: any[] = [];
     let cuePropertyUpdates: any[] = [];
+    let subUpdates: any[] = [];
     let commandLineText: string | null = null;
     let cuesLiveFlag = false;
 
@@ -784,8 +786,23 @@ export default function App() {
             channelUpdates.push(...data.channels);
           }
 
-          if ((data.subtype === "patch" || data.subtype === "patch_complete") && data.patch) {
-            patchData = data.patch;
+          if (data.subtype === "patch" || data.subtype === "patch_complete") {
+            const pd = Array.isArray(data.patch) ? data.patch : [];
+            if (pd.length > 0) {
+              if (data.subtype === "patch_complete") patchSnapshot = pd;
+              else patchUpdates.push(...pd);
+            }
+          }
+
+          if (data.subtype === "sub") {
+            const subs = Array.isArray(data.submasters)
+              ? data.submasters
+              : Array.isArray(data.subs)
+                ? data.subs
+                : Array.isArray(data.data)
+                  ? data.data
+                  : [];
+            if (subs.length > 0) subUpdates.push(...subs);
           }
 
           if (data.subtype === "cue_data") {
@@ -806,6 +823,7 @@ export default function App() {
           }
 
           if (data.subtype === "cue_property") {
+            cuesLiveFlag = true;
             cuePropertyUpdates.push(data);
           }
           break;
@@ -821,8 +839,15 @@ export default function App() {
         }
         case "patch":
         case "patch_complete": {
-          const pd = data.patch || data.data || [];
-          if (pd.length) patchData = pd;
+          const pd = Array.isArray(data.patch)
+            ? data.patch
+            : Array.isArray(data.data)
+              ? data.data
+              : [];
+          if (pd.length) {
+            if (data.type === "patch_complete") patchSnapshot = pd;
+            else patchUpdates.push(...pd);
+          }
           break;
         }
         case "pong": {
@@ -877,14 +902,60 @@ export default function App() {
       });
     }
 
-    if (patchData) {
-      setConsolePatch(patchData.map((p: any) => ({
-        channel: p.channel ?? p.chan,
-        universe: p.universe ?? p.uni ?? 1,
-        address: p.dmxAddress ?? p.address ?? p.addr ?? p.dmx,
-        fixture: p.fixture_type ?? p.fixture ?? p.type ?? "",
-        label: p.notes ?? p.label ?? "",
-      })));
+    if (patchSnapshot || patchUpdates.length > 0) {
+      const incomingRaw = patchSnapshot ?? patchUpdates;
+      const incoming = incomingRaw
+        .map((p: any) => ({
+          channel: Number(p.channel ?? p.chan),
+          universe: Number(p.universe ?? p.uni ?? 1),
+          address: Number(p.dmxAddress ?? p.address ?? p.addr ?? p.dmx),
+          fixture: p.fixture_type ?? p.fixture ?? p.type ?? "",
+          label: p.notes ?? p.label ?? "",
+        }))
+        .filter((p: any) => Number.isFinite(p.channel) && p.channel > 0);
+
+      setConsolePatch(prev => {
+        const next = new Map<number, any>();
+        if (!patchSnapshot) {
+          prev.forEach((p) => next.set(p.channel, p));
+        }
+        incoming.forEach((p: any) => next.set(p.channel, p));
+        return Array.from(next.values()).sort((a, b) => a.channel - b.channel);
+      });
+
+      if (incoming.length > 0) {
+        setChannels(prev => {
+          const byId = new Map(prev.map((c) => [c.id, c]));
+          incoming.forEach((p: any) => {
+            if (!byId.has(p.channel)) {
+              byId.set(p.channel, { id: p.channel, intensity: 0, r: 255, g: 180, b: 80 });
+            }
+          });
+          return Array.from(byId.values()).sort((a, b) => a.id - b.id);
+        });
+      }
+    }
+
+    if (subUpdates.length > 0) {
+      const parsedSubs = subUpdates
+        .map((s: any, i: number) => {
+          const index = Number(s.index ?? s.sub ?? s.id ?? i + 1);
+          if (!Number.isFinite(index) || index < 1) return null;
+          const rawLevel = Number(s.level ?? s.value ?? s.intensity ?? 0);
+          const level = rawLevel <= 1 ? Math.round(rawLevel * 100) : Math.round(rawLevel);
+          return {
+            index,
+            level: Math.max(0, Math.min(100, level)),
+            label: String(s.label ?? s.name ?? `Sub ${index}`),
+          };
+        })
+        .filter(Boolean)
+        .sort((a: any, b: any) => a.index - b.index);
+
+      if (parsedSubs.length > 0) {
+        setFaderVals(parsedSubs.map((s: any) => s.level));
+        setFaderLabels(parsedSubs.map((s: any) => s.label));
+      }
     }
 
     if (cuesLiveFlag) setCuesLive(true);
@@ -915,14 +986,25 @@ export default function App() {
       setCues(prev => {
         let newCues = [...prev];
         for (const data of cuePropertyUpdates) {
+          const cueId = String(data.cue_number ?? data.cue ?? "").trim();
+          if (!cueId) continue;
+
+          const existingIndex = newCues.findIndex(c => c.id === cueId);
+          if (existingIndex === -1) {
+            newCues.push({ id: cueId, label: "", time: "0", upTime: null, downTime: null });
+          }
+
           newCues = newCues.map(c => {
-            if (c.id !== data.cue_number) return c;
+            if (c.id !== cueId) return c;
             if (data.property === "label") return { ...c, label: String(data.value || "") };
-            if (data.property === "duration" || data.property === "up") return { ...c, time: String(data.value ?? c.time), upTime: data.value };
+            if (data.property === "duration" || data.property === "up") {
+              return { ...c, time: String(data.value ?? c.time), upTime: data.value };
+            }
             if (data.property === "down") return { ...c, downTime: data.value };
             return c;
           });
         }
+        newCues.sort((a, b) => parseFloat(a.id) - parseFloat(b.id));
         return newCues;
       });
     }
