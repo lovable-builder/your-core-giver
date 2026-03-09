@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 
 import ConsoleSteps3D from "@/components/ConsoleSteps3D";
+import VoiceMicButton from "@/components/VoiceMicButton";
 import VoiceAgent from "@/components/VoiceAgent";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
