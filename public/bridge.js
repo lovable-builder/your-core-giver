@@ -337,40 +337,108 @@ function parseIncoming(oscMsg, rinfo) {
     };
   }
 
-  // CUE DATA
+  // CUE DATA / CUE PROPERTY (direct cue number)
   const cueDataMatch = addr.match(/\/out\/get\/cue\/(\d+)\/(\d+(?:\.\d+)?)\/?(.*)$/);
   if (cueDataMatch) {
     const listId = cueDataMatch[1],
       cueNum = cueDataMatch[2],
       prop = cueDataMatch[3] || "";
+
+    if (!state.cues[listId]) state.cues[listId] = {};
+    const existing = state.cues[listId][cueNum] || { label: "", up_time: null, down_time: null, follow_time: null };
+
     if (!prop) {
-      const label = args.find((a) => typeof a === "string") || "";
+      const label = args.find((a) => typeof a === "string") || existing.label || "";
       const numA = args.filter((a) => typeof a === "number");
       const entry = {
         label: String(label),
-        up_time: numA[0] ?? null,
-        down_time: numA[1] ?? null,
-        follow_time: numA[2] ?? null,
+        up_time: numA[0] ?? existing.up_time,
+        down_time: numA[1] ?? existing.down_time,
+        follow_time: numA[2] ?? existing.follow_time,
       };
-      if (!state.cues[listId]) state.cues[listId] = {};
-      state.cues[listId][cueNum] = entry;
+      state.cues[listId][cueNum] = { ...existing, ...entry };
       return {
         type: "console_feedback",
         subtype: "cue_data",
         cue_list: listId,
         cue_number: cueNum,
-        ...entry,
+        ...state.cues[listId][cueNum],
         address: addr,
         args,
       };
     }
+
+    const rawVal = args[0] ?? null;
+    const numericVal = typeof rawVal === "number" ? rawVal : !isNaN(Number(rawVal)) ? Number(rawVal) : null;
+    const patch = {};
+    if (/label/i.test(prop)) patch.label = String(rawVal ?? existing.label ?? "");
+    if (/down/i.test(prop)) patch.down_time = numericVal;
+    if (/(up|duration|time)/i.test(prop) && !/down/i.test(prop)) patch.up_time = numericVal;
+    state.cues[listId][cueNum] = { ...existing, ...patch };
+
     return {
       type: "console_feedback",
       subtype: "cue_property",
       cue_list: listId,
       cue_number: cueNum,
       property: prop,
-      value: args[0] ?? null,
+      value: rawVal,
+      address: addr,
+      args,
+    };
+  }
+
+  // CUE DATA / CUE PROPERTY (index-based fallback)
+  const cueIndexMatch = addr.match(/\/out\/get\/cue\/(\d+)\/index\/(\d+)\/?(.*)$/);
+  if (cueIndexMatch) {
+    const listId = cueIndexMatch[1],
+      cueIndex = cueIndexMatch[2],
+      prop = cueIndexMatch[3] || "";
+
+    const cueArg = args.find((a) => typeof a === "number" || /^\d+(?:\.\d+)?$/.test(String(a)));
+    const cueNum = cueArg != null ? String(cueArg) : String(cueIndex);
+
+    if (!state.cues[listId]) state.cues[listId] = {};
+    const existing = state.cues[listId][cueNum] || { label: "", up_time: null, down_time: null, follow_time: null };
+
+    if (!prop) {
+      const label = args.find((a) => typeof a === "string") || existing.label || "";
+      const numA = args.filter((a) => typeof a === "number");
+      const entry = {
+        label: String(label),
+        up_time: numA[1] ?? existing.up_time,
+        down_time: numA[2] ?? existing.down_time,
+        follow_time: numA[3] ?? existing.follow_time,
+      };
+      state.cues[listId][cueNum] = { ...existing, ...entry };
+      return {
+        type: "console_feedback",
+        subtype: "cue_data",
+        cue_list: listId,
+        cue_number: cueNum,
+        cue_index: Number(cueIndex),
+        ...state.cues[listId][cueNum],
+        address: addr,
+        args,
+      };
+    }
+
+    const rawVal = args[0] ?? null;
+    const numericVal = typeof rawVal === "number" ? rawVal : !isNaN(Number(rawVal)) ? Number(rawVal) : null;
+    const patch = {};
+    if (/label/i.test(prop)) patch.label = String(rawVal ?? existing.label ?? "");
+    if (/down/i.test(prop)) patch.down_time = numericVal;
+    if (/(up|duration|time)/i.test(prop) && !/down/i.test(prop)) patch.up_time = numericVal;
+    state.cues[listId][cueNum] = { ...existing, ...patch };
+
+    return {
+      type: "console_feedback",
+      subtype: "cue_property",
+      cue_list: listId,
+      cue_number: cueNum,
+      cue_index: Number(cueIndex),
+      property: prop,
+      value: rawVal,
       address: addr,
       args,
     };
