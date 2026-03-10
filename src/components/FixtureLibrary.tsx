@@ -170,6 +170,7 @@ export default function FixtureLibrary({ onPatch, onRequestPatch, consolePatch =
   // Step 1: Auto-detect single mode
   const selectFixture = (f: Fixture) => {
     setSelected(f);
+    setSelectedEos(null);
     setFixtureLabel(f.model);
     if (f.modes.length === 1) {
       setSelectedMode(f.modes[0]);
@@ -178,6 +179,24 @@ export default function FixtureLibrary({ onPatch, onRequestPatch, consolePatch =
       setSelectedMode(f.modes[0]);
       setAutoModeSelected(false);
     }
+  };
+
+  // Select an EOS library fixture
+  const selectEosFixture = (ef: EOSFixture) => {
+    setSelectedEos(ef);
+    // Create a synthetic Fixture from the EOS entry
+    const syntheticFixture: Fixture = {
+      id: `eos-${ef.t}`,
+      manufacturer: ef.m,
+      model: ef.n || ef.t.replace(/_/g, " "),
+      category: "Wash" as any,
+      description: `EOS Type: ${ef.t} — ${ef.ch} DMX channel(s)`,
+      modes: [{ name: ef.t, channels: ef.ch, channelMap: Array.from({ length: ef.ch }, (_, i) => `Ch ${i + 1}`) }],
+    };
+    setSelected(syntheticFixture);
+    setSelectedMode(syntheticFixture.modes[0]);
+    setAutoModeSelected(true);
+    setFixtureLabel(ef.n || ef.t.replace(/_/g, " "));
   };
 
   // DMX address status indicator
