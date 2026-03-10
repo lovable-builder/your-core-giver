@@ -1208,60 +1208,72 @@ export default function App() {
         }
       }
 
-      // Disambiguation: check if prompt mentions a fixture type and find matches
+      // Fixture type resolution
       let resolvedFixtureType: string | undefined = forceFixtureType;
       if (!resolvedFixtureType) {
-      try {
-        const eosFixtures = await loadEOSFixtures();
-        if (eosFixtures.length > 0) {
-          let typeQuery = extractFixtureTypeFromPrompt(prompt);
-          // Heuristic for prompts like: "patch channel 400 address 600 Mack"
-          if (!typeQuery) {
-            const trailingTypeMatch = prompt.match(/\bpatch\b.*\b(?:address|addr)\s+\S+\s+(.+)$/i);
-            if (trailingTypeMatch?.[1]?.trim()) {
-              typeQuery = trailingTypeMatch[1].trim();
-            }
-          }
+        try {
+          const eosFixtures = await loadEOSFixtures();
+          if (eosFixtures.length > 0) {
+            let typeQuery = extractFixtureTypeFromPrompt(prompt);
 
-          if (typeQuery) {
-            const matches = fuzzyMatchFixtures(eosFixtures, typeQuery, 8);
-            
-            if (matches.length === 0) {
-              // No matches — let AI handle it as-is
-            } else if (matches.length === 1 || (matches[0].score > 0.8 && (matches.length === 1 || matches[0].score - matches[1].score > 0.2))) {
-              // Single confident match — use it directly
-              resolvedFixtureType = matches[0].t;
-            } else {
-              // Multiple close matches — show disambiguation choices
-              const choices = matches.slice(0, 6).map(m => ({
-                label: `${m.m}: ${m.n} (${m.ch}ch)`,
-                fixtureType: m.t,
-                dmxChannels: m.ch,
-                originalPrompt: prompt.replace(
-                  new RegExp(typeQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
-                  m.t
-                ),
-              }));
-              
-              setAiOscHistory(prev => [...prev, {
-                role: "assistant",
-                text: `I found ${matches.length} fixture types matching "${typeQuery}". Which one did you mean?`,
-                choices,
-              }]);
-              setAiOscLoading(false);
-              setAiOscInput("");
-              return;
+            // Heuristic for prompts like:
+            // "patch channel 400 address 600 Mac 2000"
+            // "patch ch 12 adress 101 aura"
+            if (!typeQuery) {
+              const trailingTypeMatch = prompt.match(/\bpatch\b.*\b(?:address|addr|adress)\b\s+\S+\s+(.+)$/i);
+              if (trailingTypeMatch?.[1]?.trim()) {
+                typeQuery = trailingTypeMatch[1].trim();
+              }
             }
-          } else {
-            // No explicit type mention — try general fuzzy match
-            const fixtureMatch = fuzzyMatchFixture(eosFixtures, prompt);
-            if (fixtureMatch) {
-              resolvedFixtureType = fixtureMatch.t;
+
+            if (typeQuery) {
+              const matches = fuzzyMatchFixtures(eosFixtures, typeQuery, 8);
+              const isSimplePatchAddressFlow = /\bpatch\b/i.test(prompt) && /\b(?:address|addr|adress)\b/i.test(prompt);
+
+              if (matches.length === 0) {
+                const fallback = fuzzyMatchFixture(eosFixtures, typeQuery);
+                if (fallback) resolvedFixtureType = fallback.t;
+              } else if (isSimplePatchAddressFlow) {
+                // User asked for a simple flow: always pick best match, no follow-up prompt.
+                resolvedFixtureType = matches[0].t;
+              } else if (
+                matches.length === 1 ||
+                (matches[0].score > 0.8 && (matches.length === 1 || matches[0].score - matches[1].score > 0.2))
+              ) {
+                resolvedFixtureType = matches[0].t;
+              } else {
+                // Multiple close matches — show disambiguation choices
+                const choices = matches.slice(0, 6).map(m => ({
+                  label: `${m.m}: ${m.n} (${m.ch}ch)`,
+                  fixtureType: m.t,
+                  dmxChannels: m.ch,
+                  originalPrompt: prompt.replace(
+                    new RegExp(typeQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
+                    m.t
+                  ),
+                }));
+
+                setAiOscHistory(prev => [...prev, {
+                  role: "assistant",
+                  text: `I found ${matches.length} fixture types matching "${typeQuery}". Which one did you mean?`,
+                  choices,
+                }]);
+                setAiOscLoading(false);
+                setAiOscInput("");
+                return;
+              }
+            } else {
+              // No explicit type mention — try general fuzzy match
+              const fixtureMatch = fuzzyMatchFixture(eosFixtures, prompt);
+              if (fixtureMatch) {
+                resolvedFixtureType = fixtureMatch.t;
+              }
             }
           }
+        } catch {
+          /* ignore */
         }
-      } catch { /* ignore */ }
-      } // end if (!resolvedFixtureType)
+      }
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/osc-agent`,
