@@ -594,9 +594,7 @@ function CommandLog({ logs, onClear }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <span
-          style={{ fontSize: "10px", color: "#444", fontFamily: "'Space Mono', monospace", letterSpacing: "0.1em" }}
-        >
+        <span style={{ fontSize: "10px", color: "#9ca3af", fontFamily: "'Space Mono', monospace", letterSpacing: "0.1em" }}>
           OSC LOG
         </span>
         <button
@@ -604,7 +602,7 @@ function CommandLog({ logs, onClear }) {
           style={{
             background: "none",
             border: "none",
-            color: "#333",
+            color: "#9ca3af",
             cursor: "pointer",
             fontSize: "10px",
             fontFamily: "'Space Mono', monospace",
@@ -618,38 +616,31 @@ function CommandLog({ logs, onClear }) {
         style={{
           flex: 1,
           overflowY: "auto",
-          background: "#050505",
+          background: "#f9fafb",
           borderRadius: "8px",
           padding: "10px",
           minHeight: "120px",
-          border: "1px solid rgba(255,255,255,0.04)",
+          border: "1px solid #e5e7eb",
         }}
       >
         {logs.length === 0 && (
-          <span style={{ color: "#1a1a1a", fontSize: "11px", fontFamily: "'Space Mono', monospace" }}>
+          <span style={{ color: "#d1d5db", fontSize: "11px", fontFamily: "'Space Mono', monospace" }}>
             // awaiting commands...
           </span>
         )}
         {logs.map((l, i) => (
           <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "3px", alignItems: "baseline" }}>
-            <span style={{ color: "#2a2a2a", fontSize: "10px", fontFamily: "'Space Mono', monospace", flexShrink: 0 }}>
+            <span style={{ color: "#9ca3af", fontSize: "10px", fontFamily: "'Space Mono', monospace", flexShrink: 0 }}>
               {l.time}
             </span>
             <span style={{ fontSize: "10px", color: "#22c55e", fontFamily: "'Space Mono', monospace", flexShrink: 0 }}>
               →
             </span>
-            <span
-              style={{
-                fontSize: "10px",
-                color: "#FF6B2B88",
-                fontFamily: "'Space Mono', monospace",
-                wordBreak: "break-all",
-              }}
-            >
+            <span style={{ fontSize: "10px", color: "#FF6B2B", fontFamily: "'Space Mono', monospace", wordBreak: "break-all" }}>
               {l.path}
             </span>
             {l.val && (
-              <span style={{ fontSize: "10px", color: "#3b82f688", fontFamily: "'Space Mono', monospace" }}>
+              <span style={{ fontSize: "10px", color: "#3b82f6", fontFamily: "'Space Mono', monospace" }}>
                 [{l.val}]
               </span>
             )}
