@@ -2654,7 +2654,7 @@ export default function App() {
                         border: "none",
                         borderBottom: oscTab === t ? "2px solid #FF6B2B" : "2px solid transparent",
                         background: oscTab === t ? "rgba(255,107,43,0.1)" : "transparent",
-                        color: oscTab === t ? "#FF6B2B" : "#444",
+                        color: oscTab === t ? "#FF6B2B" : "#9ca3af",
                         fontFamily: "'Space Mono', monospace",
                         fontSize: "10px",
                         fontWeight: "700",
