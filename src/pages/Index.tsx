@@ -2339,7 +2339,7 @@ export default function App() {
                       position: "absolute", top: "2px",
                       left: aiOscPreviewMode ? "18px" : "2px",
                       width: "12px", height: "12px", borderRadius: "50%",
-                      background: aiOscPreviewMode ? "#FF6B2B" : "#444",
+                      background: aiOscPreviewMode ? "#FF6B2B" : "#9ca3af",
                       transition: "left 0.2s",
                     }} />
                   </div>
