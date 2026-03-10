@@ -2640,7 +2640,7 @@ export default function App() {
                     display: "flex",
                     gap: "2px",
                     padding: "10px 10px 0",
-                    borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    borderBottom: "1px solid #f3f4f6",
                     overflowX: "auto",
                   }}
                 >
