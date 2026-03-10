@@ -107,11 +107,14 @@ Each object must have:
 - "value": (optional) The command value (e.g. "Chan 5 At 80 Enter")
 - "description": A short, clear description of what this command does.
 
-CRITICAL RULE FOR PATCHING: For ANY patching command (Address, Type, Unpatch, Universe), you MUST return THREE commands in order:
-1. { "path": "/eos/key/patch", "description": "Enter patch mode" }
-2. The actual newcmd patch command
-3. { "path": "/eos/key/live", "description": "Return to live mode" }
-Never send a patch newcmd without wrapping it in /eos/key/patch and /eos/key/live.
+CRITICAL RULE FOR PATCHING:
+1. Address and Type are ALWAYS separate /eos/newcmd commands. NEVER combine "Address" and "Type" in one command string.
+2. For ANY patching command (Address, Type, Unpatch, Universe), you MUST wrap with /eos/key/patch and /eos/key/live.
+3. When patching with both address AND type, return 4 commands:
+   a. /eos/key/patch
+   b. /eos/newcmd "Chan {a} Address {b} Enter"
+   c. /eos/newcmd "Chan {a} Type {c} Enter"
+   d. /eos/key/live
 
 Here is the reference of valid OSC commands:
 ${OSC_COMMANDS_REF}
