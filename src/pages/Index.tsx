@@ -2577,8 +2577,8 @@ export default function App() {
                     onClick={() => setAiOscHistory([])}
                     style={{
                       padding: "10px 12px", borderRadius: "8px",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      background: "transparent", color: "#333",
+                      border: "1px solid #e5e7eb",
+                      background: "transparent", color: "#9ca3af",
                       fontFamily: "'Space Mono', monospace", fontSize: "9px",
                       cursor: "pointer",
                     }}
