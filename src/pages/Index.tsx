@@ -730,9 +730,8 @@ export default function App() {
     label?: string;
   }>>([]);
 
-  // ── Message buffer for throttled processing ──
+  // ── Message buffer for processing ──
   const msgBufferRef = useRef<any[]>([]);
-  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flushMessages = useCallback(() => {
     const batch = msgBufferRef.current;
