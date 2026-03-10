@@ -1,39 +1,48 @@
 
 
-# Plan: Implement ETC Console AI Main Component
+# Fix: Disambiguation Not Triggering + Remove Auto-Live Fallback
 
-## What happened
-You pasted a large single-file React component for the ETC Console AI app, but **the code is truncated** — it cuts off mid-render inside the "LIVE STAGE" module at `{channels.filter(c => c.in`. The component cannot be implemented as-is because the JSX is incomplete.
+## Two Problems
 
-## What I can see
-The pasted code contains:
-- **ParticleField** — canvas-based animated background
-- **SpectrumBar** — audio-style visualizer bars
-- **GlowButton** — styled button with glow effects
-- **StepCard** — console instruction step cards
-- **OscCard** — OSC command sender cards
-- **FixtureGrid** — channel color/intensity visualizer
-- **CueStack** — cue list with active highlight
-- **CommandLog** — scrollable OSC command log
-- **Main App** — three modules: AI Guide, OSC Control, Live Stage
+### 1. Disambiguation didn't trigger for "patch channel 300 as a Mac 2000"
+The `extractFixtureTypeFromPrompt` function only matches prompts containing the word "type" (e.g., "fixture type mac 2000"). The phrase "as a Mac 2000" was never caught, so no fuzzy matching ran, and the AI agent guessed "Mac 2000" (not a valid EOS string).
 
-All use inline styles (no Tailwind), and the AI Guide calls the Anthropic API directly from the client (which exposes the API key — should use Lovable AI via edge function instead).
+### 2. `/eos/key/live` should not be auto-appended after patching
+The current logic always wraps patch commands with `/eos/key/patch` ... `/eos/key/live`. But this is wrong — patching commands should enter patch mode first if needed, but should NOT force-return to live. The user may want to stay in patch mode to continue patching. The agent should only switch modes when the user explicitly asks.
 
-## Issues to resolve before implementing
+## Changes
 
-1. **Incomplete code** — The "LIVE STAGE" module JSX is cut off. I need the rest of the component to implement it fully.
-2. **JSX syntax** — The pasted code has bare `<div>` tags without className/style attributes in many places (likely stripped during copy). This will need reconstruction.
-3. **Direct Anthropic API call** — The `fetchSteps` function calls `api.anthropic.com` directly from the browser, which is insecure and won't work due to CORS. Should be routed through Lovable AI (edge function).
+### `src/lib/eosFixtureParser.ts`
+Expand `extractFixtureTypeFromPrompt` to also match:
+- "as a {fixture}" / "as {fixture}"
+- "using {fixture}"  
+- "with {fixture}"
+- "{fixture}" at end of patching prompt after channel/address info
 
-## Proposed approach (once complete code is provided)
+```typescript
+// Match: "type X", "as a X", "as X", "using X", "with X"
+const patterns = [
+  /(?:fixture\s+)?type\s+(.+?)(?:\s+(?:at|on|to|address|addr|chan(?:nel)?|universe)\s|$)/i,
+  /\bas\s+(?:a\s+)?(.+?)(?:\s+(?:at|on|to|address|addr|chan(?:nel)?|universe)\s|$)/i,
+  /\b(?:using|with)\s+(.+?)(?:\s+(?:at|on|to|address|addr|chan(?:nel)?|universe)\s|$)/i,
+];
+```
 
-1. **Create `src/pages/Index.tsx`** — Convert the full component into a properly typed TypeScript React component
-2. **Split into sub-components** — Place helpers (ParticleField, GlowButton, StepCard, OscCard, etc.) into `src/components/` files
-3. **Replace Anthropic direct call** — Use Lovable AI gateway via an edge function for the AI Guide module
-4. **Load fonts** — Add Google Fonts link to `index.html` for Space Mono and DM Sans
-5. **Update CSS** — Set dark background in `index.css`
+### `supabase/functions/osc-agent/index.ts`
+Update the system prompt patching rules:
+- Remove the instruction to always wrap with `/eos/key/live` at the end
+- Instead, instruct the agent to **enter the required mode first** (e.g., `/eos/key/patch` for patching) but NOT auto-return to live
+- Only send `/eos/key/live` if the user explicitly asks to go back to live
 
-## Next step
+### `src/pages/Index.tsx`
+- Remove the safety net that auto-wraps patch commands with `/eos/key/patch` + `/eos/key/live` (lines 1311-1325). Replace with logic that only prepends `/eos/key/patch` if patch commands are detected and no patch key is already present — but does NOT append `/eos/key/live`.
+- Same for the preset macro path (line 1195) — remove the auto `/eos/key/live` at the end.
 
-**Please paste the remaining portion of the component** (from the Live Stage module onward through the closing of the App component) so I can implement the complete application.
+## Files
+
+| File | Change |
+|------|--------|
+| `src/lib/eosFixtureParser.ts` | Broader prompt extraction patterns |
+| `supabase/functions/osc-agent/index.ts` | Remove auto-live rule from patching instructions |
+| `src/pages/Index.tsx` | Remove `/eos/key/live` from safety net + presets |
 
