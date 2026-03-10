@@ -1,39 +1,52 @@
 
 
-# Plan: Implement ETC Console AI Main Component
+# Use Official EOS Fixture Library for Patching
 
-## What happened
-You pasted a large single-file React component for the ETC Console AI app, but **the code is truncated** — it cuts off mid-render inside the "LIVE STAGE" module at `{channels.filter(c => c.in`. The component cannot be implemented as-is because the JSX is incomplete.
+## What This File Contains
 
-## What I can see
-The pasted code contains:
-- **ParticleField** — canvas-based animated background
-- **SpectrumBar** — audio-style visualizer bars
-- **GlowButton** — styled button with glow effects
-- **StepCard** — console instruction step cards
-- **OscCard** — OSC command sender cards
-- **FixtureGrid** — channel color/intensity visualizer
-- **CueStack** — cue list with active highlight
-- **CommandLog** — scrollable OSC command log
-- **Main App** — three modules: AI Guide, OSC Control, Live Stage
+The uploaded `FixtureList.html` is the **official ETC EOS Fixture Library v3.3.5.15** — approximately 20,000+ fixtures with the **exact model strings** that EOS expects in `Chan X Type {model} Enter` commands.
 
-All use inline styles (no Tailwind), and the AI Guide calls the Anthropic API directly from the client (which exposes the API key — should use Lovable AI via edge function instead).
+Each row has: **Manufacturer**, **Model** (the exact EOS type string), **DMX Footprint**, and **Full Name**.
 
-## Issues to resolve before implementing
+This is the missing link in patching: right now the osc-agent guesses fixture type names (e.g., "Dimmer"), but EOS expects exact strings like `Src_Four_750` or `CS_Spot_HPL_575`. With this data, patching via voice/AI will actually work reliably.
 
-1. **Incomplete code** — The "LIVE STAGE" module JSX is cut off. I need the rest of the component to implement it fully.
-2. **JSX syntax** — The pasted code has bare `<div>` tags without className/style attributes in many places (likely stripped during copy). This will need reconstruction.
-3. **Direct Anthropic API call** — The `fetchSteps` function calls `api.anthropic.com` directly from the browser, which is insecure and won't work due to CORS. Should be routed through Lovable AI (edge function).
+## Plan
 
-## Proposed approach (once complete code is provided)
+### 1. Parse HTML into JSON data file
 
-1. **Create `src/pages/Index.tsx`** — Convert the full component into a properly typed TypeScript React component
-2. **Split into sub-components** — Place helpers (ParticleField, GlowButton, StepCard, OscCard, etc.) into `src/components/` files
-3. **Replace Anthropic direct call** — Use Lovable AI gateway via an edge function for the AI Guide module
-4. **Load fonts** — Add Google Fonts link to `index.html` for Space Mono and DM Sans
-5. **Update CSS** — Set dark background in `index.css`
+Write a build-time script or one-time parse to extract all rows into a compact JSON array:
+```json
+[
+  { "m": "AAdyn Technology", "t": "JAB_Daylight", "ch": 6, "n": "JAB Daylight" },
+  ...
+]
+```
 
-## Next step
+Store as `src/data/eosFixtureLibrary.ts` — exported as a typed array. Estimated ~20K entries, ~800KB raw (gzips to ~100KB).
 
-**Please paste the remaining portion of the component** (from the Live Stage module onward through the closing of the App component) so I can implement the complete application.
+### 2. Replace/augment fixture search in FixtureLibrary.tsx
+
+- Add a search mode that queries the EOS library by manufacturer, model, or full name
+- When user selects a fixture, auto-populate the **Type** field with the exact `model` string (e.g., `Src_Four_750`)
+- Use the `ch` (DMX footprint) value for accurate collision detection
+- Keep the current curated fixtures as "favorites" or "common" tab
+
+### 3. Feed exact type strings to osc-agent
+
+- Update the osc-agent system prompt to note: "Use the exact EOS fixture type string provided in the user's context. Do not guess or abbreviate."
+- When `executeAiOscCommands` builds patch commands, include the selected fixture's EOS type string in the context sent to the agent
+
+### 4. Improve voice patching accuracy
+
+- When a voice command says "patch source four", fuzzy-match against the EOS library's `fullName` field to find the correct `model` string
+- Pass the resolved type string directly into the patch command
+
+### Files
+
+| File | Action |
+|------|--------|
+| `src/data/eosFixtureLibrary.ts` | **New** — parsed EOS fixture data (~20K entries) |
+| `src/components/FixtureLibrary.tsx` | **Modified** — search against EOS library, auto-fill Type |
+| `supabase/functions/osc-agent/index.ts` | **Modified** — use exact type strings from context |
+| `src/pages/Index.tsx` | **Modified** — fuzzy match preset/voice commands against EOS library |
 
