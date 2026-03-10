@@ -1153,7 +1153,7 @@ export default function App() {
   }, [oscHost, oscPort]);
 
   // Execute AI OSC commands — with preset macro interception
-  const executeAiOscCommands = useCallback(async (prompt: string, skipUserMessage = false) => {
+  const executeAiOscCommands = useCallback(async (prompt: string, skipUserMessage = false, forceFixtureType?: string) => {
     if (!prompt.trim()) return;
     
     setAiOscLoading(true);
@@ -1204,7 +1204,8 @@ export default function App() {
       }
 
       // Disambiguation: check if prompt mentions a fixture type and find matches
-      let resolvedFixtureType: string | undefined;
+      let resolvedFixtureType: string | undefined = forceFixtureType;
+      if (!resolvedFixtureType) {
       try {
         const eosFixtures = await loadEOSFixtures();
         if (eosFixtures.length > 0) {
@@ -1247,6 +1248,7 @@ export default function App() {
           }
         }
       } catch { /* ignore */ }
+      } // end if (!resolvedFixtureType)
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/osc-agent`,
@@ -2434,8 +2436,8 @@ export default function App() {
                                     role: "user",
                                     text: `✓ Selected: ${choice.label}`,
                                   }]);
-                                  // Execute with the rewritten prompt (skip duplicate user message)
-                                  executeAiOscCommands(choice.originalPrompt, true);
+                                  // Execute with the rewritten prompt, passing the exact fixture type to skip re-disambiguation
+                                  executeAiOscCommands(choice.originalPrompt, true, choice.fixtureType);
                                 }}
                                 style={{
                                   display: "flex", alignItems: "center", gap: "10px",
