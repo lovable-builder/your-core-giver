@@ -47,6 +47,7 @@ const OSC_COMMANDS = {
   Patching: [
     { label: "Patch Mode", path: "/eos/key/patch", params: [], isKey: true },
     { label: "Address", path: "/eos/newcmd", value: "Chan {a} Address {b} Enter", params: ["Channel", "DMX Addr"] },
+    { label: "Type", path: "/eos/newcmd", value: "Chan {a} Type {b} Enter", params: ["Channel", "Fixture Type"] },
     { label: "Unpatch", path: "/eos/newcmd", value: "Chan {a} Address 0 Enter", params: ["Channel"] },
     { label: "Universe", path: "/eos/newcmd", value: "Chan {a} Address {b}/{c} Enter", params: ["Chan", "Universe", "Addr"] },
   ],
@@ -1230,7 +1231,21 @@ export default function App() {
       }
       
       const data = await res.json();
-      const commands = data.commands || [];
+      let commands: Array<{ path: string; value?: string; description: string }> = data.commands || [];
+      
+      // Safety net: split combined "Chan X Address Y Type Z Enter" into two separate commands
+      commands = commands.flatMap((cmd: any) => {
+        if (cmd.path === '/eos/newcmd' && cmd.value) {
+          const match = cmd.value.match(/^(Chan\s+\d+)\s+Address\s+(\S+)\s+Type\s+(.+?)\s+Enter$/i);
+          if (match) {
+            return [
+              { path: '/eos/newcmd', value: `${match[1]} Address ${match[2]} Enter`, description: `Patch address ${match[2]}` },
+              { path: '/eos/newcmd', value: `${match[1]} Type ${match[3]} Enter`, description: `Set type ${match[3]}` },
+            ];
+          }
+        }
+        return [cmd];
+      });
       
       setAiOscHistory(prev => [...prev, { 
         role: "assistant", 
