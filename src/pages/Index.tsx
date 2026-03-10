@@ -1767,19 +1767,19 @@ export default function App() {
                           display: "flex", flexDirection: "column", alignItems: "center", gap: "4px",
                           padding: "8px 6px",
                           borderRadius: "10px",
-                          background: "rgba(255,107,43,0.04)",
-                          border: "1px solid rgba(255,107,43,0.15)",
+                          background: "rgba(255,107,43,0.03)",
+                          border: "1px solid #e5e7eb",
                           cursor: "pointer",
                           transition: "all 0.25s",
                         }}
                         onMouseOver={(e) => {
-                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.12)";
-                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,107,43,0.5)";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.08)";
+                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,107,43,0.4)";
                           (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
                         }}
                         onMouseOut={(e) => {
-                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.04)";
-                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,107,43,0.15)";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.03)";
+                          (e.currentTarget as HTMLElement).style.borderColor = "#e5e7eb";
                           (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
                         }}
                       >
