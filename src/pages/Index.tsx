@@ -1833,7 +1833,7 @@ export default function App() {
                   }}
                 >
                   <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#22c55e" }} />
-                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#555" }}>
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#9ca3af" }}>
                     CONSOLE: <span style={{ color: selectedConsole.color }}>{selectedConsole.name.toUpperCase()}</span>
                   </span>
                   <button
