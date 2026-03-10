@@ -2069,7 +2069,7 @@ export default function App() {
 
                         <div style={{
                           fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
-                          color: "#aaa", lineHeight: 1.5,
+                          color: "#6b7280", lineHeight: 1.5,
                         }}>
                           {steps[activeStep]?.desc}
                         </div>
