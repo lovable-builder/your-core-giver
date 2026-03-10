@@ -1676,7 +1676,7 @@ export default function App() {
                     height: "8px",
                     borderRadius: "50%",
                     background: "#22c55e",
-                    boxShadow: "0 0 8px #22c55e",
+                    boxShadow: "none",
                   }}
                 />
                 <span
