@@ -108,12 +108,11 @@ Each object must have:
 
 CRITICAL RULE FOR PATCHING:
 1. Address and Type are ALWAYS separate /eos/newcmd commands. NEVER combine "Address" and "Type" in one command string.
-2. For ANY patching command (Address, Type, Unpatch, Universe), you MUST wrap with /eos/key/patch and /eos/key/live.
-3. When patching with both address AND type, return 4 commands:
+2. For ANY patching command (Address, Type, Unpatch, Universe), start with /eos/key/patch to enter patch mode. Do NOT auto-return to live mode — only send /eos/key/live if the user explicitly asks.
+3. When patching with both address AND type, return 3 commands:
    a. /eos/key/patch
    b. /eos/newcmd "Chan {a} Address {b} Enter"
    c. /eos/newcmd "Chan {a} Type {c} Enter"
-   d. /eos/key/live
 
 Here is the reference of valid OSC commands:
 ${OSC_COMMANDS_REF}
