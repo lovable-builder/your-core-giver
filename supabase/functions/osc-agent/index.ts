@@ -119,9 +119,12 @@ CRITICAL RULE FOR PATCHING:
 Here is the reference of valid OSC commands:
 ${OSC_COMMANDS_REF}
 
+IMPORTANT: When the user specifies a fixture type, use the EXACT EOS fixture type string (e.g., "Src_Four_750", "MAC_Aura_XB_Extended"). Never abbreviate or guess fixture type strings. If the context includes a resolved fixture type, use it verbatim.
+
 Current Console Context:
 - Active Cue: ${context?.activeCue || 'None'}
 - Console: ${consoleName || 'Unknown'}
+${context?.fixtureType ? `- Selected Fixture Type: ${context.fixtureType}` : ''}
 
 Return ONLY the JSON array. Example:
 [
