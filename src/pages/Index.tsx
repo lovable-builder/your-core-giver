@@ -1231,7 +1231,21 @@ export default function App() {
       }
       
       const data = await res.json();
-      const commands = data.commands || [];
+      let commands: Array<{ path: string; value?: string; description?: string }> = data.commands || [];
+      
+      // Safety net: split combined "Chan X Address Y Type Z Enter" into two separate commands
+      commands = commands.flatMap((cmd: any) => {
+        if (cmd.path === '/eos/newcmd' && cmd.value) {
+          const match = cmd.value.match(/^(Chan\s+\d+)\s+Address\s+(\S+)\s+Type\s+(.+?)\s+Enter$/i);
+          if (match) {
+            return [
+              { path: '/eos/newcmd', value: `${match[1]} Address ${match[2]} Enter`, description: `Patch address ${match[2]}` },
+              { path: '/eos/newcmd', value: `${match[1]} Type ${match[3]} Enter`, description: `Set type ${match[3]}` },
+            ];
+          }
+        }
+        return [cmd];
+      });
       
       setAiOscHistory(prev => [...prev, { 
         role: "assistant", 
