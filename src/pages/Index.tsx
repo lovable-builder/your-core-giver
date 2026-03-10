@@ -1416,29 +1416,44 @@ export default function App() {
     const txt = input.trim();
     setInput("");
     setMessages((prev) => [...prev, { role: "user", text: txt }]);
-    // Always ask which console before generating a guide
-    setPendingPrompt(txt);
-    setShowConsoleSelect(true);
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", text: "Which console are you working with?", type: "console-select" },
-    ]);
+    if (selectedConsole) {
+      // Console already selected — generate guide directly
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: `Generating your guide for **${selectedConsole.name}**...`, type: "loading" },
+      ]);
+      await fetchSteps(txt, selectedConsole.name);
+    } else {
+      // No console yet — ask first
+      setPendingPrompt(txt);
+      setShowConsoleSelect(true);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "Which console are you working with?", type: "console-select" },
+      ]);
+    }
   };
 
   const handleConsoleSelect = async (con) => {
     setSelectedConsole(con);
     setShowConsoleSelect(false);
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", text: con.name },
-      {
-        role: "assistant",
-        text: `${con.name} locked in. Generating your guide...`,
-        type: "loading",
-      },
-    ]);
-    await fetchSteps(pendingPrompt, con.name);
-    setPendingPrompt(null);
+    if (pendingPrompt) {
+      // User already typed a question, then picked a console — generate the guide
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", text: con.name },
+        { role: "assistant", text: `${con.name} locked in. Generating your guide...`, type: "loading" },
+      ]);
+      await fetchSteps(pendingPrompt, con.name);
+      setPendingPrompt(null);
+    } else {
+      // Initial console selection — just confirm and wait for user's question
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", text: con.name },
+        { role: "assistant", text: `**${con.name}** selected. What would you like help with?` },
+      ]);
+    }
   };
 
   // ── RENDER ───────────────────────────────────────────────────────────────────
