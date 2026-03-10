@@ -48,11 +48,7 @@ const OSC_COMMANDS = {
     { label: "Record FX", path: "/eos/newcmd", value: "Effect {a} Record Enter", params: ["Effect #"] },
   ],
   Patching: [
-    { label: "Patch Mode", path: "/eos/key/patch", params: [], isKey: true },
-    { label: "Address", path: "/eos/newcmd", value: "Chan {a} Address {b} Enter", params: ["Channel", "DMX Addr"] },
-    { label: "Type", path: "/eos/newcmd", value: "Chan {a} Type {b} Enter", params: ["Channel", "Fixture Type"] },
     { label: "Unpatch", path: "/eos/newcmd", value: "Chan {a} Address 0 Enter", params: ["Channel"] },
-    { label: "Universe", path: "/eos/newcmd", value: "Chan {a} Address {b}/{c} Enter", params: ["Chan", "Universe", "Addr"] },
   ],
   Groups: [
     { label: "Select", path: "/eos/newcmd", value: "Group {a} Enter", params: ["Group #"] },
