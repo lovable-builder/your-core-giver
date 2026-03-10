@@ -713,6 +713,7 @@ export default function App() {
       dmxChannels: number;
       originalPrompt: string;
     }>;
+    selectedChoice?: string;
   }>>([]);
   const [aiOscPreviewMode, setAiOscPreviewMode] = useState(false);
 
