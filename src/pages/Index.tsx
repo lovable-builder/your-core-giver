@@ -2604,8 +2604,8 @@ export default function App() {
                     style={{
                       padding: "4px 12px", borderRadius: "16px",
                       background: "transparent",
-                      border: "1px solid rgba(255,107,43,0.12)",
-                      color: "#555", fontFamily: "'DM Sans', sans-serif",
+                      border: "1px solid #e5e7eb",
+                      color: "#6b7280", fontFamily: "'DM Sans', sans-serif",
                       fontSize: "11px", cursor: "pointer",
                       transition: "all 0.2s",
                     }}
