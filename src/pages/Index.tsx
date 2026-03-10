@@ -2037,7 +2037,7 @@ export default function App() {
                       }}>
                         <div style={{
                           fontFamily: "'Space Mono', monospace", fontSize: "9px",
-                          letterSpacing: "0.12em", color: "#444",
+                          letterSpacing: "0.12em", color: "#9ca3af",
                         }}>
                           STEP {activeStep + 1} / {steps.length} — {(steps[activeStep]?.zone || "").toUpperCase()}
                         </div>
