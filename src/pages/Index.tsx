@@ -2391,7 +2391,7 @@ export default function App() {
                                   [{cmd.value}]
                                 </span>
                               )}
-                              <span style={{ fontSize: "10px", color: "#555", fontFamily: "'DM Sans', sans-serif", flex: 1 }}>
+                              <span style={{ fontSize: "10px", color: "#6b7280", fontFamily: "'DM Sans', sans-serif", flex: 1 }}>
                                 — {cmd.description}
                               </span>
                               {/* In preview mode allow manual fire */}
