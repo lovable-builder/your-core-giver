@@ -2531,13 +2531,11 @@ export default function App() {
                   <PatchPanel
                     onPatch={async (channel, address, fixtureType) => {
                       const cmdStr = `Chan ${channel} Address ${address} Type ${fixtureType} Enter`;
-                      sendOsc("/eos/key/patch");
                       sendOsc("/eos/newcmd", cmdStr);
                       setAiOscHistory(prev => [...prev, {
                         role: "assistant",
                         text: `Patched channel ${channel} → address ${address}, type ${fixtureType}`,
                         commands: [
-                          { path: "/eos/key/patch", description: "Enter patch mode" },
                           { path: "/eos/newcmd", value: cmdStr, description: `Patch ch ${channel}` },
                         ],
                       }]);
