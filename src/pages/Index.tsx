@@ -1237,7 +1237,17 @@ export default function App() {
               channelCount: consoleFeedback.channelCount,
             }
           }),
+        }
+      );
       
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+      
+      const data = await res.json();
+      let commands: Array<{ path: string; value?: string; description: string }> = data.commands || [];
+
       setAiOscHistory(prev => [...prev, { 
         role: "assistant", 
         text: `Generated ${commands.length} command(s)`, 
