@@ -1117,7 +1117,7 @@ export default function App() {
       setMessages([
         {
           role: "assistant",
-          text: "ETC Console AI online. Which console do you need help with?",
+          text: "Welcome to the **ETC Eos Console AI Guide**.\n\nI can walk you through any console operation step-by-step — from recording cues and patching fixtures to building effects and configuring system settings.\n\nFirst, which console are you working with?",
           type: "console-select",
         },
       ]);
