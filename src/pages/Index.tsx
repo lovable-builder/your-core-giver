@@ -2152,8 +2152,8 @@ export default function App() {
                       (e.currentTarget as HTMLElement).style.color = "#FF6B2B";
                     }}
                     onMouseOut={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
-                      (e.currentTarget as HTMLElement).style.color = "#444";
+                      (e.currentTarget as HTMLElement).style.borderColor = "#e5e7eb";
+                      (e.currentTarget as HTMLElement).style.color = "#6b7280";
                     }}
                   >
                     {s}
