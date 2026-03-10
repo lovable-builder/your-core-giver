@@ -1810,7 +1810,7 @@ export default function App() {
                         </span>
                         <span style={{
                           fontFamily: "'DM Sans', sans-serif", fontSize: "8px",
-                          color: "#444",
+                          color: "#9ca3af",
                         }}>
                           {c.desc}
                         </span>
