@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { FIXTURES, MANUFACTURERS, FIXTURE_CATEGORIES, type Fixture, type FixtureMode } from "@/data/fixtures";
 import { validatePatchAddress, getNextAvailableDMXAddress, getAddressStatus } from "@/lib/patchingUtils";
+import { loadEOSFixtures, searchEOSFixtures, type EOSFixture } from "@/lib/eosFixtureParser";
 import {
   createTransaction,
   buildUnpatchCommands,
