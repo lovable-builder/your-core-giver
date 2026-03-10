@@ -1825,11 +1825,11 @@ export default function App() {
                 <div
                   style={{
                     padding: "8px 18px",
-                    borderTop: "1px solid rgba(255,255,255,0.03)",
+                    borderTop: "1px solid #f3f4f6",
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
-                    background: "rgba(0,0,0,0.2)",
+                    background: "#fafafa",
                   }}
                 >
                   <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#22c55e" }} />
