@@ -2550,12 +2550,31 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Commands Grid */}
-                <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                  {OSC_COMMANDS[oscTab].map((cmd, i) => (
-                    <OscCard key={i} cmd={cmd} onSend={sendOsc} />
-                  ))}
-                </div>
+                {/* Commands Grid or Patch Panel */}
+                {oscTab === "Patching" ? (
+                  <PatchPanel
+                    onPatch={async (channel, address, fixtureType) => {
+                      const cmdStr = `Chan ${channel} Address ${address} Type ${fixtureType} Enter`;
+                      sendOsc("/eos/key/patch");
+                      await new Promise(resolve => setTimeout(resolve, 900));
+                      sendOsc("/eos/newcmd", cmdStr);
+                      setAiOscHistory(prev => [...prev, {
+                        role: "assistant",
+                        text: `Patched channel ${channel} → address ${address}, type ${fixtureType}`,
+                        commands: [
+                          { path: "/eos/key/patch", description: "Enter patch mode" },
+                          { path: "/eos/newcmd", value: cmdStr, description: `Patch ch ${channel}` },
+                        ],
+                      }]);
+                    }}
+                  />
+                ) : (
+                  <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                    {OSC_COMMANDS[oscTab].map((cmd, i) => (
+                      <OscCard key={i} cmd={cmd} onSend={sendOsc} />
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Right Column */}
