@@ -2360,7 +2360,15 @@ export default function App() {
                           {msg.choices.map((choice, ci) => (
                             <button
                               key={ci}
-                              onClick={() => executeAiOscCommands(choice.originalPrompt)}
+                              onClick={() => {
+                                // Add selection feedback to chat
+                                setAiOscHistory(prev => [...prev, {
+                                  role: "user",
+                                  text: `Selected: ${choice.fixtureType}`,
+                                }]);
+                                // Execute with the rewritten prompt
+                                executeAiOscCommands(choice.originalPrompt);
+                              }}
                               style={{
                                 display: "flex", alignItems: "center", gap: "10px",
                                 background: "rgba(0,255,200,0.04)",
