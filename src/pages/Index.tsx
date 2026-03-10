@@ -2320,7 +2320,7 @@ export default function App() {
               {/* Header row */}
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <span style={{ fontSize: "16px" }}>🤖</span>
-                <span style={{ fontFamily: "'Orbitron', 'Space Mono', monospace", fontSize: "10px", color: "#00ffc8", letterSpacing: "0.12em", flex: 1 }}>
+                <span style={{ fontFamily: "'Orbitron', 'Space Mono', monospace", fontSize: "10px", color: "#FF6B2B", letterSpacing: "0.12em", flex: 1 }}>
                   AI OSC AGENT — VOICE & TEXT TO CONSOLE
                 </span>
                 {/* Preview mode toggle */}
