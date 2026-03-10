@@ -2360,58 +2360,83 @@ export default function App() {
                       {/* Disambiguation choices */}
                       {msg.choices && msg.choices.length > 0 && (
                         <div style={{ paddingLeft: "30px", display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" }}>
-                          {msg.choices.map((choice, ci) => (
-                            <button
-                              key={ci}
-                              onClick={() => {
-                                // Add selection feedback to chat
-                                setAiOscHistory(prev => [...prev, {
-                                  role: "user",
-                                  text: `Selected: ${choice.fixtureType}`,
-                                }]);
-                                // Execute with the rewritten prompt
-                                executeAiOscCommands(choice.originalPrompt);
-                              }}
-                              style={{
-                                display: "flex", alignItems: "center", gap: "10px",
-                                background: "rgba(0,255,200,0.04)",
-                                border: "1px solid rgba(0,255,200,0.15)",
-                                borderRadius: "8px",
-                                padding: "8px 14px",
-                                cursor: "pointer",
-                                transition: "all 0.2s",
-                                textAlign: "left",
-                                width: "100%",
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.borderColor = "rgba(0,255,200,0.5)";
-                                e.currentTarget.style.background = "rgba(0,255,200,0.08)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.borderColor = "rgba(0,255,200,0.15)";
-                                e.currentTarget.style.background = "rgba(0,255,200,0.04)";
-                              }}
-                            >
-                              <span style={{
-                                fontFamily: "'Space Mono', monospace", fontSize: "11px",
-                                color: "#00ffc8", fontWeight: "700",
-                              }}>
-                                {choice.fixtureType}
-                              </span>
-                              <span style={{
-                                fontSize: "11px", color: "#aaa",
-                                fontFamily: "'DM Sans', sans-serif", flex: 1,
-                              }}>
-                                {choice.label}
-                              </span>
-                              <span style={{
-                                fontFamily: "'Space Mono', monospace", fontSize: "9px",
-                                color: "#555", flexShrink: 0,
-                              }}>
-                                SELECT →
-                              </span>
-                            </button>
-                          ))}
+                          {msg.choices.map((choice, ci) => {
+                            const isSelected = msg.selectedChoice === choice.fixtureType;
+                            const hasSelection = !!msg.selectedChoice;
+                            return (
+                              <button
+                                key={ci}
+                                disabled={hasSelection}
+                                onClick={() => {
+                                  // Mark this history entry with the selected choice
+                                  setAiOscHistory(prev => prev.map((m, i) =>
+                                    i === idx ? { ...m, selectedChoice: choice.fixtureType } : m
+                                  ));
+                                  // Add selection feedback to chat
+                                  setAiOscHistory(prev => [...prev, {
+                                    role: "user",
+                                    text: `✓ Selected: ${choice.label}`,
+                                  }]);
+                                  // Execute with the rewritten prompt (skip duplicate user message)
+                                  executeAiOscCommands(choice.originalPrompt, true);
+                                }}
+                                style={{
+                                  display: "flex", alignItems: "center", gap: "10px",
+                                  background: isSelected
+                                    ? "rgba(0,255,200,0.15)"
+                                    : hasSelection
+                                      ? "rgba(255,255,255,0.02)"
+                                      : "rgba(0,255,200,0.04)",
+                                  border: `1px solid ${isSelected ? "rgba(0,255,200,0.6)" : hasSelection ? "rgba(255,255,255,0.05)" : "rgba(0,255,200,0.15)"}`,
+                                  borderRadius: "8px",
+                                  padding: "8px 14px",
+                                  cursor: hasSelection ? "default" : "pointer",
+                                  transition: "all 0.2s",
+                                  textAlign: "left",
+                                  width: "100%",
+                                  opacity: hasSelection && !isSelected ? 0.35 : 1,
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!hasSelection) {
+                                    e.currentTarget.style.borderColor = "rgba(0,255,200,0.5)";
+                                    e.currentTarget.style.background = "rgba(0,255,200,0.08)";
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!hasSelection) {
+                                    e.currentTarget.style.borderColor = "rgba(0,255,200,0.15)";
+                                    e.currentTarget.style.background = "rgba(0,255,200,0.04)";
+                                  }
+                                }}
+                              >
+                                {isSelected && (
+                                  <span style={{ color: "#00ffc8", fontSize: "12px", flexShrink: 0 }}>✓</span>
+                                )}
+                                <span style={{
+                                  fontFamily: "'Space Mono', monospace", fontSize: "11px",
+                                  color: isSelected ? "#00ffc8" : hasSelection ? "#555" : "#00ffc8",
+                                  fontWeight: "700",
+                                }}>
+                                  {choice.fixtureType}
+                                </span>
+                                <span style={{
+                                  fontSize: "11px",
+                                  color: isSelected ? "#ccc" : hasSelection ? "#444" : "#aaa",
+                                  fontFamily: "'DM Sans', sans-serif", flex: 1,
+                                }}>
+                                  {choice.label}
+                                </span>
+                                {!hasSelection && (
+                                  <span style={{
+                                    fontFamily: "'Space Mono', monospace", fontSize: "9px",
+                                    color: "#555", flexShrink: 0,
+                                  }}>
+                                    SELECT →
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
