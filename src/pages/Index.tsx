@@ -2004,7 +2004,7 @@ export default function App() {
                       alignItems: "center",
                       justifyContent: "center",
                       gap: "12px",
-                      color: "#1e1e1e",
+                      color: "#d1d5db",
                     }}
                   >
                     <div style={{ fontSize: "48px", opacity: 0.3 }}>◈</div>
