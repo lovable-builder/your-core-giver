@@ -1860,7 +1860,7 @@ export default function App() {
               <div
                 style={{
                   padding: "14px 16px",
-                  borderTop: "1px solid rgba(255,255,255,0.04)",
+                  borderTop: "1px solid #f3f4f6",
                   display: "flex",
                   gap: "8px",
                 }}
