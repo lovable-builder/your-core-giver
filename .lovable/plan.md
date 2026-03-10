@@ -1,39 +1,48 @@
 
 
-# Plan: Implement ETC Console AI Main Component
+# Fixture Disambiguation: Agent Returns Choices for Ambiguous Types
 
-## What happened
-You pasted a large single-file React component for the ETC Console AI app, but **the code is truncated** — it cuts off mid-render inside the "LIVE STAGE" module at `{channels.filter(c => c.in`. The component cannot be implemented as-is because the JSX is incomplete.
+## Problem
+When a user says "patch channel 2 address 3 fixture type mac 200", the fuzzy matcher picks the top match and sends it — but "mac 200" matches dozens of fixtures (MAC 2000 Wash, MAC 2000 Performance, MAC 200, etc.). The user gets no choice.
 
-## What I can see
-The pasted code contains:
-- **ParticleField** — canvas-based animated background
-- **SpectrumBar** — audio-style visualizer bars
-- **GlowButton** — styled button with glow effects
-- **StepCard** — console instruction step cards
-- **OscCard** — OSC command sender cards
-- **FixtureGrid** — channel color/intensity visualizer
-- **CueStack** — cue list with active highlight
-- **CommandLog** — scrollable OSC command log
-- **Main App** — three modules: AI Guide, OSC Control, Live Stage
+## Solution
+Add a disambiguation step: when the fuzzy search returns multiple close matches, show them as clickable choices in the chat history instead of auto-executing.
 
-All use inline styles (no Tailwind), and the AI Guide calls the Anthropic API directly from the client (which exposes the API key — should use Lovable AI via edge function instead).
+## Changes
 
-## Issues to resolve before implementing
+### 1. New function in `src/lib/eosFixtureParser.ts`
 
-1. **Incomplete code** — The "LIVE STAGE" module JSX is cut off. I need the rest of the component to implement it fully.
-2. **JSX syntax** — The pasted code has bare `<div>` tags without className/style attributes in many places (likely stripped during copy). This will need reconstruction.
-3. **Direct Anthropic API call** — The `fetchSteps` function calls `api.anthropic.com` directly from the browser, which is insecure and won't work due to CORS. Should be routed through Lovable AI (edge function).
+Add `fuzzyMatchFixtures(fixtures, query, limit=5)` that returns the **top N matches** (scored and sorted) instead of just the best one. This is the plural version of the existing `fuzzyMatchFixture`.
 
-## Proposed approach (once complete code is provided)
+### 2. Update `executeAiOscCommands` in `src/pages/Index.tsx`
 
-1. **Create `src/pages/Index.tsx`** — Convert the full component into a properly typed TypeScript React component
-2. **Split into sub-components** — Place helpers (ParticleField, GlowButton, StepCard, OscCard, etc.) into `src/components/` files
-3. **Replace Anthropic direct call** — Use Lovable AI gateway via an edge function for the AI Guide module
-4. **Load fonts** — Add Google Fonts link to `index.html` for Space Mono and DM Sans
-5. **Update CSS** — Set dark background in `index.css`
+Before calling the osc-agent, run `fuzzyMatchFixtures` against the prompt. If:
+- **1 match with high confidence** (score > 0.8) → proceed as today, pass exact type to agent
+- **Multiple matches** (2+ results with similar scores) → don't call the agent. Instead, push an assistant message to `aiOscHistory` with a new `choices` field containing the matched fixtures. The user clicks one to re-run the command with the exact type.
 
-## Next step
+### 3. Extend `aiOscHistory` type
 
-**Please paste the remaining portion of the component** (from the Live Stage module onward through the closing of the App component) so I can implement the complete application.
+Add optional `choices` field to the history entry type:
+```typescript
+choices?: Array<{
+  label: string;        // e.g. "MAC 2000 Wash XB (39ch)"
+  fixtureType: string;  // exact EOS type string
+  originalPrompt: string; // the original prompt with type replaced
+}>;
+```
+
+### 4. Render choices in chat UI
+
+When a history entry has `choices`, render clickable buttons (styled like the existing GlowButton). Clicking one calls `executeAiOscCommands` with a rewritten prompt that includes the exact fixture type string, bypassing disambiguation on the second pass.
+
+### 5. Extract fixture type mention from prompt
+
+Add a helper that detects the fixture type portion of a patching prompt (text after "type" or "fixture type" keywords) so we know what substring to search and what to replace when the user picks a choice.
+
+## Files Modified
+
+| File | Change |
+|------|--------|
+| `src/lib/eosFixtureParser.ts` | Add `fuzzyMatchFixtures()` returning top N scored matches |
+| `src/pages/Index.tsx` | Disambiguation logic + choices UI in chat history + extended history type |
 
