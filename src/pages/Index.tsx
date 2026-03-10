@@ -2299,7 +2299,7 @@ export default function App() {
                       executeAiOscCommands(aiOscInput);
                     }
                   }}
-                  placeholder='Try: "Set channels 1-5 to full", "Fire cue 3", "Blackout stage"...'
+                  placeholder='Try: "Set channels 1-5 to full", "Apply Front House Rig", "Fire cue 3"...'
                   disabled={aiOscLoading}
                   style={{
                     flex: 1,
