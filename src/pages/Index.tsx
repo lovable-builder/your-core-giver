@@ -520,7 +520,7 @@ function CueStack({ cues, activeCue, onGo, isLive = false }) {
           background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)",
         }}>
           <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#22c55e", animation: "pulse-ring 2s infinite" }} />
-        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", color: "#22c55e", letterSpacing: "0.1em" }}>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", color: "#22c55e", letterSpacing: "0.1em" }}>
             LIVE FROM CONSOLE — {cues.length} CUES
           </span>
         </div>
