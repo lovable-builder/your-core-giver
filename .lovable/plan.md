@@ -1,39 +1,65 @@
 
 
-# Plan: Implement ETC Console AI Main Component
+# Why Nothing Happened: Combined Command Syntax
 
-## What happened
-You pasted a large single-file React component for the ETC Console AI app, but **the code is truncated** — it cuts off mid-render inside the "LIVE STAGE" module at `{channels.filter(c => c.in`. The component cannot be implemented as-is because the JSX is incomplete.
+## Root Cause
 
-## What I can see
-The pasted code contains:
-- **ParticleField** — canvas-based animated background
-- **SpectrumBar** — audio-style visualizer bars
-- **GlowButton** — styled button with glow effects
-- **StepCard** — console instruction step cards
-- **OscCard** — OSC command sender cards
-- **FixtureGrid** — channel color/intensity visualizer
-- **CueStack** — cue list with active highlight
-- **CommandLog** — scrollable OSC command log
-- **Main App** — three modules: AI Guide, OSC Control, Live Stage
+EOS does **not** support combining `Address` and `Type` in a single command line. The AI agent generated:
 
-All use inline styles (no Tailwind), and the AI Guide calls the Anthropic API directly from the client (which exposes the API key — should use Lovable AI via edge function instead).
+```
+Chan 100 Address 200 Type Dimmer Enter
+```
 
-## Issues to resolve before implementing
+This is **invalid EOS syntax**. EOS requires these as **two separate commands**:
 
-1. **Incomplete code** — The "LIVE STAGE" module JSX is cut off. I need the rest of the component to implement it fully.
-2. **JSX syntax** — The pasted code has bare `<div>` tags without className/style attributes in many places (likely stripped during copy). This will need reconstruction.
-3. **Direct Anthropic API call** — The `fetchSteps` function calls `api.anthropic.com` directly from the browser, which is insecure and won't work due to CORS. Should be routed through Lovable AI (edge function).
+1. `Chan 100 Address 200 Enter`
+2. `Chan 100 Type Dimmer Enter`
 
-## Proposed approach (once complete code is provided)
+## Fix
 
-1. **Create `src/pages/Index.tsx`** — Convert the full component into a properly typed TypeScript React component
-2. **Split into sub-components** — Place helpers (ParticleField, GlowButton, StepCard, OscCard, etc.) into `src/components/` files
-3. **Replace Anthropic direct call** — Use Lovable AI gateway via an edge function for the AI Guide module
-4. **Load fonts** — Add Google Fonts link to `index.html` for Space Mono and DM Sans
-5. **Update CSS** — Set dark background in `index.css`
+### 1. Update osc-agent system prompt (`supabase/functions/osc-agent/index.ts`)
 
-## Next step
+In the Patching section of `OSC_COMMANDS_REF`, add explicit fixture type command and a rule that Address and Type must be **separate newcmd calls**:
 
-**Please paste the remaining portion of the component** (from the Live Stage module onward through the closing of the App component) so I can implement the complete application.
+```
+Patching:
+- Address: /eos/newcmd "Chan {a} Address {b} Enter"
+- Type: /eos/newcmd "Chan {a} Type {b} Enter"    ← NEW
+- Unpatch: /eos/newcmd "Chan {a} Address 0 Enter"
+
+RULE: Address and Type MUST be separate /eos/newcmd commands. Never combine them.
+When patching with both address and type, return 4 commands:
+  1. /eos/key/patch
+  2. /eos/newcmd "Chan {a} Address {b} Enter"
+  3. /eos/newcmd "Chan {a} Type {c} Enter"
+  4. /eos/key/live
+```
+
+### 2. Add frontend safety net (`src/pages/Index.tsx`)
+
+In `executeAiOscCommands`, add a splitter that detects combined `Address ... Type` in a single newcmd value and breaks it into two separate commands. This catches any AI hallucination that combines them:
+
+```typescript
+// Before sending, split any "Chan X Address Y Type Z Enter" into two commands
+commands = commands.flatMap(cmd => {
+  if (cmd.path === '/eos/newcmd') {
+    const match = cmd.value?.match(/^(Chan\s+\d+)\s+Address\s+(\S+)\s+Type\s+(.+?)\s+Enter$/i);
+    if (match) {
+      return [
+        { path: '/eos/newcmd', value: `${match[1]} Address ${match[2]} Enter` },
+        { path: '/eos/newcmd', value: `${match[1]} Type ${match[3]} Enter` },
+      ];
+    }
+  }
+  return [cmd];
+});
+```
+
+### 3. Add "Type" to Patching UI commands (`src/pages/Index.tsx`)
+
+Add a "Set Type" entry in `OSC_COMMANDS.Patching` so users can also do it manually from the command panel.
+
+### Files Modified
+- `supabase/functions/osc-agent/index.ts` — separate Type command + rule
+- `src/pages/Index.tsx` — command splitter safety net + UI entry
 
