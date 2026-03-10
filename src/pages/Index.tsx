@@ -1209,7 +1209,15 @@ export default function App() {
       try {
         const eosFixtures = await loadEOSFixtures();
         if (eosFixtures.length > 0) {
-          const typeQuery = extractFixtureTypeFromPrompt(prompt);
+          let typeQuery = extractFixtureTypeFromPrompt(prompt);
+          // Heuristic for prompts like: "patch channel 400 address 600 Mack"
+          if (!typeQuery) {
+            const trailingTypeMatch = prompt.match(/\bpatch\b.*\b(?:address|addr)\s+\S+\s+(.+)$/i);
+            if (trailingTypeMatch?.[1]?.trim()) {
+              typeQuery = trailingTypeMatch[1].trim();
+            }
+          }
+
           if (typeQuery) {
             const matches = fuzzyMatchFixtures(eosFixtures, typeQuery, 8);
             
@@ -1292,6 +1300,20 @@ export default function App() {
         }
         return [cmd];
       });
+
+      // If we resolved fixture type from official library, enforce it in any Type command
+      if (resolvedFixtureType) {
+        commands = commands.map((cmd: any) => {
+          if (cmd.path !== "/eos/newcmd" || typeof cmd.value !== "string") return cmd;
+          const typeMatch = cmd.value.match(/^(Chan\s+\d+\s+Type\s+)(.+?)(\s+Enter)$/i);
+          if (!typeMatch) return cmd;
+          return {
+            ...cmd,
+            value: `${typeMatch[1]}${resolvedFixtureType}${typeMatch[3]}`,
+            description: `Set channel fixture type to ${resolvedFixtureType}`,
+          };
+        });
+      }
       
       setAiOscHistory(prev => [...prev, { 
         role: "assistant", 
