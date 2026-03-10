@@ -2530,17 +2530,17 @@ export default function App() {
                   disabled={aiOscLoading}
                   style={{
                     flex: 1,
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(0,255,200,0.15)",
+                    background: "#f9fafb",
+                    border: "1px solid #e5e7eb",
                     borderRadius: "8px",
                     padding: "10px 14px",
-                    color: "#e0e0e0",
+                    color: "#1f2937",
                     fontSize: "13px",
                     fontFamily: "'DM Sans', sans-serif",
                     outline: "none",
                   }}
-                  onFocus={(e) => (e.target.style.borderColor = "rgba(0,255,200,0.4)")}
-                  onBlur={(e) => (e.target.style.borderColor = "rgba(0,255,200,0.15)")}
+                  onFocus={(e) => (e.target.style.borderColor = "#FF6B2B88")}
+                  onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
                 />
                 <button
                   onClick={() => { if (!aiOscLoading && aiOscInput.trim()) executeAiOscCommands(aiOscInput); }}
