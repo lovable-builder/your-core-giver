@@ -1196,11 +1196,8 @@ export default function App() {
             text: `Applying preset "${preset.name}" — ${preset.quantity} fixture(s)` ,
             commands,
           }]);
-          // Execute with 200ms stagger, 400ms for mode switches
-          for (let i = 0; i < commands.length; i++) {
-            const cmd = commands[i];
-            const isModeSwitchCmd = cmd.path === "/eos/key/patch" || cmd.path === "/eos/key/live";
-            if (i > 0) await new Promise(resolve => setTimeout(resolve, isModeSwitchCmd ? 400 : 200));
+          // Execute immediately (no artificial stagger)
+          for (const cmd of commands) {
             sendOsc(cmd.path, cmd.value);
           }
           setAiOscLoading(false);
