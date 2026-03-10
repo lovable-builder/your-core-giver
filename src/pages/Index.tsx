@@ -1040,12 +1040,12 @@ export default function App() {
           if (!disposed) {
             setWsConnected(false);
             setConsoleFeedback(prev => ({ ...prev, consoleOnline: false }));
-            wsReconnectRef.current = setTimeout(connect, 3000);
+            wsReconnectRef.current = setTimeout(connect, 500);
           }
         };
         ws.onerror = () => { ws.close(); };
       } catch {
-        if (!disposed) wsReconnectRef.current = setTimeout(connect, 3000);
+        if (!disposed) wsReconnectRef.current = setTimeout(connect, 500);
       }
     };
     connect();
