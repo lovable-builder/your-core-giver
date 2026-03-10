@@ -10,9 +10,10 @@ import HeroSection from "@/components/HeroSection";
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const CONSOLES = [
-  { id: "eos-ti", name: "Eos Ti", desc: "Flagship", color: "#FF6B2B" },
-  { id: "ion-xe", name: "Ion Xe", desc: "Mid-size", color: "#FF8C42" },
-  { id: "element2", name: "Element 2", desc: "Compact", color: "#FFA559" },
+  { id: "eos-apex", name: "Eos Apex", desc: "Next-Gen Flagship", color: "#FF6B2B", img: "/images/Apex.gif" },
+  { id: "gio5", name: "Gio @5", desc: "Flagship", color: "#FF6B2B", img: "/images/Gio5.gif" },
+  { id: "ion-xe", name: "Ion Xe", desc: "Mid-size", color: "#FF8C42", img: "/images/IonXe.gif" },
+  { id: "element2", name: "Element 2", desc: "Compact", color: "#FFA559", img: "/images/Element2.gif" },
   { id: "nomad", name: "Nomad", desc: "Software", color: "#FFB347" },
   { id: "colorsource", name: "ColorSource", desc: "Entry", color: "#FFC27A" },
 ];
@@ -1764,32 +1765,55 @@ export default function App() {
 
                 {/* Console selector pills */}
                 {showConsoleSelect && (
-                  <div className="msg-in" style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  <div className="msg-in" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px" }}>
                     {CONSOLES.map((c) => (
                       <button
                         key={c.id}
                         onClick={() => handleConsoleSelect(c)}
                         style={{
-                          padding: "6px 14px",
-                          borderRadius: "20px",
-                          background: "rgba(255,107,43,0.08)",
-                          border: "1px solid rgba(255,107,43,0.3)",
-                          color: "#FF6B2B",
-                          fontFamily: "'Space Mono', monospace",
-                          fontSize: "11px",
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: "6px",
+                          padding: "10px 8px",
+                          borderRadius: "12px",
+                          background: "rgba(255,107,43,0.04)",
+                          border: "1px solid rgba(255,107,43,0.15)",
                           cursor: "pointer",
-                          transition: "all 0.2s",
+                          transition: "all 0.25s",
                         }}
                         onMouseOver={(e) => {
-                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.2)";
-                          (e.currentTarget as HTMLElement).style.transform = "scale(1.05)";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.12)";
+                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,107,43,0.5)";
+                          (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
                         }}
                         onMouseOut={(e) => {
-                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.08)";
-                          (e.currentTarget as HTMLElement).style.transform = "scale(1)";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(255,107,43,0.04)";
+                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,107,43,0.15)";
+                          (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
                         }}
                       >
-                        {c.name}
+                        {(c as any).img && (
+                          <img
+                            src={(c as any).img}
+                            alt={c.name}
+                            style={{
+                              width: "100%", height: "60px",
+                              objectFit: "contain",
+                              borderRadius: "6px",
+                              opacity: 0.85,
+                            }}
+                          />
+                        )}
+                        <span style={{
+                          fontFamily: "'Space Mono', monospace", fontSize: "10px",
+                          color: c.color, fontWeight: 700, letterSpacing: "0.05em",
+                        }}>
+                          {c.name}
+                        </span>
+                        <span style={{
+                          fontFamily: "'DM Sans', sans-serif", fontSize: "9px",
+                          color: "#555",
+                        }}>
+                          {c.desc}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -1991,31 +2015,64 @@ export default function App() {
                 )}
                 {steps && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <ConsoleSteps3D
-                      steps={steps}
-                      activeIndex={activeStep}
-                      onActiveIndexChange={setActiveStep}
-                      height={260}
-                      className="rounded-xl"
-                    />
+                    {/* Single 3D button + command input side by side */}
+                    <div style={{ display: "flex", gap: "16px", alignItems: "stretch" }}>
+                      {/* Single 3D button for active step */}
+                      <div style={{ flex: "0 0 180px" }}>
+                        <ConsoleSteps3D
+                          steps={[steps[activeStep]]}
+                          activeIndex={0}
+                          height={140}
+                          className="rounded-xl"
+                        />
+                      </div>
 
-                    {/* Active step info (keeps the descriptive text you had under each button) */}
-                    <div
-                      style={{
-                        padding: "10px 12px",
-                        borderRadius: "12px",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                        background: "rgba(0,0,0,0.22)",
+                      {/* Command typing input display */}
+                      <div style={{
+                        flex: 1,
                         display: "flex",
                         flexDirection: "column",
-                        gap: "4px",
-                      }}
-                    >
-                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.12em", color: "#666" }}>
-                        {(steps[activeStep]?.zone || "").toUpperCase()}
-                      </div>
-                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "#cfcfcf" }}>
-                        {steps[activeStep]?.desc}
+                        justifyContent: "center",
+                        gap: "10px",
+                      }}>
+                        <div style={{
+                          fontFamily: "'Space Mono', monospace", fontSize: "9px",
+                          letterSpacing: "0.12em", color: "#444",
+                        }}>
+                          STEP {activeStep + 1} / {steps.length} — {(steps[activeStep]?.zone || "").toUpperCase()}
+                        </div>
+
+                        {/* Simulated typing input */}
+                        <div style={{
+                          background: "rgba(0,0,0,0.4)",
+                          border: "1px solid rgba(255,107,43,0.25)",
+                          borderRadius: "8px",
+                          padding: "12px 16px",
+                          fontFamily: "'Space Mono', monospace",
+                          fontSize: "14px",
+                          color: "#FF6B2B",
+                          letterSpacing: "0.04em",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          boxShadow: "0 0 20px rgba(255,107,43,0.06), inset 0 1px 0 rgba(255,255,255,0.03)",
+                        }}>
+                          <span style={{ color: "#333", userSelect: "none" }}>⌨</span>
+                          <span>{steps[activeStep]?.button.toUpperCase()}</span>
+                          <span style={{
+                            width: "2px", height: "16px",
+                            background: "#FF6B2B",
+                            animation: "shimmer 1s infinite",
+                            marginLeft: "2px",
+                          }} />
+                        </div>
+
+                        <div style={{
+                          fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
+                          color: "#aaa", lineHeight: 1.5,
+                        }}>
+                          {steps[activeStep]?.desc}
+                        </div>
                       </div>
                     </div>
                   </div>
