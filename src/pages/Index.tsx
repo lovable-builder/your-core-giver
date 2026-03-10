@@ -1730,23 +1730,23 @@ export default function App() {
                         maxWidth: "82%",
                         background:
                           msg.role === "user"
-                            ? "linear-gradient(135deg, rgba(255,107,43,0.2), rgba(255,61,0,0.15))"
-                            : "rgba(255,255,255,0.04)",
-                        border: `1px solid ${msg.role === "user" ? "rgba(255,107,43,0.3)" : "rgba(255,255,255,0.06)"}`,
+                            ? "linear-gradient(135deg, rgba(255,107,43,0.1), rgba(255,107,43,0.06))"
+                            : "#f9fafb",
+                        border: `1px solid ${msg.role === "user" ? "rgba(255,107,43,0.2)" : "#e5e7eb"}`,
                         borderRadius: msg.role === "user" ? "14px 14px 3px 14px" : "14px 14px 14px 3px",
                         padding: "10px 14px",
                         fontSize: "13px",
                         lineHeight: "1.6",
-                        color: msg.role === "user" ? "#ffd0b5" : "#bbb",
+                        color: msg.role === "user" ? "#9a4a1c" : "#4b5563",
                         fontFamily: "'DM Sans', sans-serif",
                       }}
                     >
                       {msg.type === "loading" ? (
-                        <span style={{ color: "#444" }}>
+                        <span style={{ color: "#9ca3af" }}>
                           thinking<span style={{ animation: "shimmer 1s infinite" }}>...</span>
                         </span>
                       ) : msg.role === "assistant" ? (
-                        <div className="prose prose-sm prose-invert max-w-none" style={{ fontSize: "13px", lineHeight: "1.6" }}>
+                        <div className="prose prose-sm max-w-none" style={{ fontSize: "13px", lineHeight: "1.6" }}>
                           <ReactMarkdown>{msg.text}</ReactMarkdown>
                         </div>
                       ) : (
