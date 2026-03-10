@@ -1204,7 +1204,8 @@ export default function App() {
       }
 
       // Disambiguation: check if prompt mentions a fixture type and find matches
-      let resolvedFixtureType: string | undefined;
+      let resolvedFixtureType: string | undefined = forceFixtureType;
+      if (!resolvedFixtureType) {
       try {
         const eosFixtures = await loadEOSFixtures();
         if (eosFixtures.length > 0) {
