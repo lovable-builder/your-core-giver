@@ -1167,11 +1167,13 @@ export default function App() {
   }, [oscHost, oscPort]);
 
   // Execute AI OSC commands — with preset macro interception
-  const executeAiOscCommands = useCallback(async (prompt: string) => {
+  const executeAiOscCommands = useCallback(async (prompt: string, skipUserMessage = false) => {
     if (!prompt.trim()) return;
     
     setAiOscLoading(true);
-    setAiOscHistory(prev => [...prev, { role: "user", text: prompt }]);
+    if (!skipUserMessage) {
+      setAiOscHistory(prev => [...prev, { role: "user", text: prompt }]);
+    }
     
     try {
       // Step 4: Voice macro — intercept preset commands before calling AI
