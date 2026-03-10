@@ -1117,7 +1117,7 @@ export default function App() {
       setMessages([
         {
           role: "assistant",
-          text: "ETC Console AI online. Which console do you need help with?",
+          text: "Welcome to the **ETC Eos Console AI Guide**.\n\nI can walk you through any console operation step-by-step — from recording cues and patching fixtures to building effects and configuring system settings.\n\nFirst, which console are you working with?",
           type: "console-select",
         },
       ]);
@@ -1765,15 +1765,15 @@ export default function App() {
 
                 {/* Console selector pills */}
                 {showConsoleSelect && (
-                  <div className="msg-in" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px" }}>
+                  <div className="msg-in" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
                     {CONSOLES.map((c) => (
                       <button
                         key={c.id}
                         onClick={() => handleConsoleSelect(c)}
                         style={{
-                          display: "flex", flexDirection: "column", alignItems: "center", gap: "6px",
-                          padding: "10px 8px",
-                          borderRadius: "12px",
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: "4px",
+                          padding: "8px 6px",
+                          borderRadius: "10px",
                           background: "rgba(255,107,43,0.04)",
                           border: "1px solid rgba(255,107,43,0.15)",
                           cursor: "pointer",
@@ -1790,27 +1790,34 @@ export default function App() {
                           (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
                         }}
                       >
-                        {(c as any).img && (
+                        {(c as any).img ? (
                           <img
                             src={(c as any).img}
                             alt={c.name}
                             style={{
-                              width: "100%", height: "60px",
+                              width: "100%", height: "50px",
                               objectFit: "contain",
-                              borderRadius: "6px",
-                              opacity: 0.85,
+                              borderRadius: "4px",
                             }}
                           />
+                        ) : (
+                          <div style={{
+                            width: "100%", height: "50px",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            background: "rgba(255,255,255,0.02)",
+                            borderRadius: "4px",
+                            fontSize: "20px", opacity: 0.3,
+                          }}>◈</div>
                         )}
                         <span style={{
-                          fontFamily: "'Space Mono', monospace", fontSize: "10px",
-                          color: c.color, fontWeight: 700, letterSpacing: "0.05em",
+                          fontFamily: "'Space Mono', monospace", fontSize: "9px",
+                          color: c.color, fontWeight: 700,
                         }}>
                           {c.name}
                         </span>
                         <span style={{
-                          fontFamily: "'DM Sans', sans-serif", fontSize: "9px",
-                          color: "#555",
+                          fontFamily: "'DM Sans', sans-serif", fontSize: "8px",
+                          color: "#444",
                         }}>
                           {c.desc}
                         </span>
