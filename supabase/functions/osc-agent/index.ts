@@ -26,11 +26,13 @@ Cues:
 - Time: /eos/newcmd "Cue {a} Time {b} Enter"
 
 Effects:
-- Apply: /eos/newcmd "Chan {a} Effect {b} Enter"
+- Apply to Channels: /eos/newcmd "Chan {a} Effect {b} Enter"
+- Apply to Group: /eos/newcmd "Group {a} Effect {b} Enter"
 - Rate: /eos/newcmd "Effect {a} Rate {b} Enter"
 - Size: /eos/newcmd "Effect {a} Size {b} Enter"
 - Offset: /eos/newcmd "Effect {a} Offset {b} Enter"
-- Stop: /eos/newcmd "Chan {a} Effect Stop Enter"
+- Stop Channels: /eos/newcmd "Chan {a} Effect Stop Enter"
+- Stop Group: /eos/newcmd "Group {a} Effect Stop Enter"
 - Record FX: /eos/newcmd "Effect {a} Record Enter"
 
 Patching (IMPORTANT: Address and Type are SEPARATE commands. NEVER combine them in one newcmd.):
