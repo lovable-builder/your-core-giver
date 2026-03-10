@@ -1797,7 +1797,7 @@ export default function App() {
                           <div style={{
                             width: "100%", height: "50px",
                             display: "flex", alignItems: "center", justifyContent: "center",
-                            background: "rgba(255,255,255,0.02)",
+                            background: "#f3f4f6",
                             borderRadius: "4px",
                             fontSize: "20px", opacity: 0.3,
                           }}>◈</div>
