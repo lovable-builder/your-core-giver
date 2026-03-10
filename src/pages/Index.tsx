@@ -1969,7 +1969,7 @@ export default function App() {
               <div
                 style={{
                   padding: "14px 18px",
-                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  borderBottom: "1px solid #f3f4f6",
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
