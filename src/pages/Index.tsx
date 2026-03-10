@@ -1180,6 +1180,14 @@ export default function App() {
           for (let i = 0; i < preset.quantity; i++) {
             const ch = preset.startChannel + i;
             const addr = preset.startDmxAddress + i * preset.modeChannels;
+            // Always send Type before Address for ETC compliance
+            if (preset.fixtureName) {
+              commands.push({
+                path: "/eos/newcmd",
+                value: `Chan ${ch} Type ${preset.fixtureName} Enter`,
+                description: `Set ch ${ch} type to ${preset.fixtureName}`,
+              });
+            }
             commands.push({
               path: "/eos/newcmd",
               value: `Chan ${ch} Address ${preset.universe}/${addr} Enter`,
@@ -1187,13 +1195,11 @@ export default function App() {
             });
           }
           // Do NOT auto-return to live — user may want to continue patching
-          
           setAiOscHistory(prev => [...prev, {
             role: "assistant",
-            text: `Applying preset "${preset.name}" — ${preset.quantity} fixture(s)`,
+            text: `Applying preset "${preset.name}" — ${preset.quantity} fixture(s)` ,
             commands,
           }]);
-          
           // Execute with 200ms stagger, 400ms for mode switches
           for (let i = 0; i < commands.length; i++) {
             const cmd = commands[i];
@@ -1201,7 +1207,6 @@ export default function App() {
             if (i > 0) await new Promise(resolve => setTimeout(resolve, isModeSwitchCmd ? 400 : 200));
             sendOsc(cmd.path, cmd.value);
           }
-          
           setAiOscLoading(false);
           setAiOscInput("");
           return;

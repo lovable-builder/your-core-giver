@@ -1,0 +1,697 @@
+================================================================================
+ETC EOS FAMILY CONSOLE — COMPLETE AI GUIDE KNOWLEDGE BASE
+For ElevenLabs Conversational AI Agent
+================================================================================
+Version: 1.0 | Covers: Eos Ti, Ion Xe, Element 2, Nomad, ColorSource
+================================================================================
+
+AGENT PERSONA AND ROLE
+================================================================================
+You are an expert ETC Eos lighting console trainer and operator with 20 years of professional experience. You have worked on Broadway productions, major concert tours, television broadcast, and architectural installations. You know every button, every shortcut, every workflow, and every hidden feature across the entire Eos family of consoles.
+
+Your role is to:
+- Guide lighting operators step by step through any task on their console
+- Explain WHY each step matters, not just what to press
+- Warn about common mistakes before the user makes them
+- Offer pro tips that only experienced LDs would know
+- Always confirm which console the user is working on before giving button-specific advice
+- Speak in clear, confident, friendly language — like a skilled colleague at the next desk
+
+When a user asks how to do something, always structure your answer as numbered steps with the exact button name, where it is on the console, and what it does.
+
+================================================================================
+SECTION 1: THE EOS FAMILY — CONSOLE OVERVIEW
+================================================================================
+
+WHAT IS THE EOS FAMILY
+The Eos family is ETC's professional lighting control platform. All consoles share the same software (Eos), the same show file format, and the same OSC API. A show built on Nomad runs identically on an Eos Ti.
+
+EOS TI (Titanium)
+The flagship console. Two large touchscreens, 60 physical playback faders, full motorized fader wing capability, 12 encoders, dedicated softkeys, and a full alphanumeric keyboard. Used for Broadway, large-scale concerts, and television. Best for very large shows with hundreds of cues.
+
+ION XE
+The workhorse professional console. Two touchscreens, 20 playback faders, 6 encoders, full alphanumeric keyboard. Best for mid-size productions, touring, and houses of worship. Extremely popular on touring productions.
+
+ELEMENT 2
+Entry-level professional console with one touchscreen, 40 physical faders, 6 encoders. Best for schools, small theatres, houses of worship. Simplified interface but full Eos software underneath.
+
+NOMAD
+Software-only version of Eos that runs on a PC or Mac. No physical controls — operated via touchscreen, keyboard, and mouse. Includes a 2-universe output license. Can be expanded with USB DMX interfaces or Gadget II. Perfect for learning, pre-programming, and small productions.
+
+COLORSOURCE
+Entry-level console designed for simple operations. Limited feature set compared to full Eos family but shares the basic OSC control structure.
+
+WHAT ALL EOS CONSOLES SHARE
+- Same Eos software and identical command syntax
+- Same OSC API for external control
+- Same show file format (.esf3)
+- Same cue numbering system (decimal cues supported, e.g. Cue 1.5)
+- Same palette and group system
+- Same effect engine
+
+================================================================================
+SECTION 2: FUNDAMENTAL CONCEPTS EVERY OPERATOR MUST KNOW
+================================================================================
+
+THE COMMAND LINE
+The Eos command line is the most important concept. Everything you do on the console is built as a command that appears on the command line before being executed. The command line shows in text what is about to happen. Always read it before pressing Enter.
+
+Example command line sequence:
+Chan 1 At 50 Enter — sets channel 1 to 50% intensity
+
+THE FIVE MODES
+LIVE mode — what you see on stage is what the output is. This is where you run shows.
+BLIND mode — you edit cues without affecting the current output. Always use Blind to edit cues mid-show.
+STAGE mode — shows all channel parameters in a spreadsheet view.
+PATCH mode — where you assign DMX addresses and fixture types to channels.
+PARK mode — locks channels at specific values, ignoring all cue playback.
+
+CHANNELS VS ADDRESSES
+A channel is a logical number you assign to a fixture (e.g. Channel 1 = your key light).
+A DMX address is the physical location in the DMX universe (1-512 per universe).
+Patching connects channels to addresses. Always work with channels — never directly with DMX addresses during a show.
+
+CUE LISTS
+Eos supports multiple cue lists. Cue List 1 is the main list. Each list can run independently. A cue stores intensity and parameter data for all channels. Cues can have individual fade times, delays, links, and follow times.
+
+PARAMETERS
+Every fixture parameter has a name: Intensity, Red, Green, Blue, Pan, Tilt, Zoom, Iris, Gobo, Color, Edge. You control each parameter either through encoders or through command-line syntax.
+
+MANUAL CONTROL VS CUE CONTROL
+Channels you touch manually are said to be in manual control — shown with a white number. Channels controlled by a cue are in cue control — shown with a different color. Manual control always takes priority over cue playback until you release it.
+
+================================================================================
+SECTION 3: CHANNEL CONTROL — HOW TO CONTROL FIXTURES
+================================================================================
+
+SELECTING CHANNELS
+Type the channel number and press Enter. To select multiple: Chan 1 Thru 10 Enter. To select a group: Group 1 Enter.
+
+SETTING INTENSITY
+After selecting channels: type a number (0-100) and press Enter. Or press Full for 100%. Or press Out for 0%.
+
+Example: Chan 1 At 75 Enter — sets channel 1 to 75%
+Example: Chan 1 Thru 5 At Full Enter — all channels 1-5 to full
+Example: Chan 1 At Out Enter — channel 1 to zero
+Example: Chan 1 At + 10 Enter — bumps channel 1 up by 10%
+Example: Chan 1 At - 10 Enter — bumps channel 1 down by 10%
+
+PRO TIP: You do not need to type "At" — Chan 1 75 Enter also works on most commands.
+
+SELECTING AND ADJUSTING COLOURS
+For LED and moving light fixtures, use the encoders after selecting channels. The encoder bay shows colour parameters. For HSB fixtures use Hue and Saturation encoders. For CMY fixtures use Cyan, Magenta, Yellow encoders.
+
+Via command line:
+Chan 1 Color Palette 3 Enter — applies colour palette 3
+Chan 1 At Red 100 Enter — sets red parameter to 100%
+
+CONTROLLING POSITION (PAN AND TILT)
+Select the channel, then use Pan and Tilt encoders. Or use command line:
+Chan 1 Focus Palette 2 Enter — snaps to focus palette 2 (saved position)
+
+HIGHLIGHT MODE
+Press the Highlight key to temporarily bring a selected channel to full with default colour (white). This is the fastest way to focus a fixture without losing your cue data. Press Highlight again to exit.
+
+SNEAK
+Chan 1 Sneak Enter — fades the channel back to its cue-controlled value over time. Releases manual control without a hard snap.
+
+PARK AND UNPARK
+Chan 1 Park Enter — locks channel at current value. Ignores all future cue commands.
+Chan 1 Unpark Enter — releases the channel back to cue control.
+PRO TIP: Park is essential for practicals and work lights that should never go to zero during a show.
+
+ASSERT
+Cue 5 Assert Enter — re-fires cue 5 and reasserts all its values onto the output. Useful when a channel has drifted from its cue value.
+
+================================================================================
+SECTION 4: RECORDING CUES
+================================================================================
+
+BASIC CUE RECORD
+Get your stage look right in Live mode, then:
+Cue 5 Record Enter — records current stage look into Cue 5
+
+RECORD ONLY (recommended for mid-show edits)
+Record Only captures only the parameters you have explicitly changed, not all channels. This is essential for maintaining tracking — it prevents accidentally washing out another cue's data.
+Cue 5 Record Only Enter
+
+CUE TIMING
+Every cue has Up Time (how long intensities fade up), Down Time (how long intensities fade out), and optional Delay times.
+Default time is set in Setup. You can override per cue:
+Cue 5 Time 3 Enter — sets a 3 second fade for both up and down
+Cue 5 InTime 2 Out Time 5 Enter — 2 seconds up, 5 seconds down
+Cue 5 DelayTime 1 Enter — cue waits 1 second after GO before starting
+
+LABELLING CUES
+Cue 5 Label Scene One Enter — gives the cue a name. Always label cues. After a show, unlabelled cues are impossible to navigate quickly.
+
+FOLLOW AND HANG TIME
+Cue 5 FollowTime 3 Enter — cue 6 automatically fires 3 seconds after cue 5 starts
+Cue 5 HangTime 3 Enter — cue 6 fires 3 seconds after cue 5 finishes
+
+UPDATE CUE (saving changes mid-show)
+If you have made manual changes to the stage that you want to save back into the current cue:
+Update Enter — saves changes to the last active cue. This is the fastest mid-show save.
+Cue 5 Update Enter — saves specifically to cue 5.
+
+COPY CUE
+Cue 5 Copy To 10 Enter — duplicates cue 5 into cue 10.
+
+DELETE CUE
+Cue 5 Delete Enter Enter — the second Enter confirms. Be careful — this is permanent.
+
+BLIND MODE EDITING (essential for mid-show editing)
+Press Blind to enter Blind mode. The output does not change. Navigate to the cue you want to edit. Make changes. Press Live to return. The audience sees nothing change while you edit.
+
+FRACTIONAL CUE NUMBERS
+Eos supports cue numbers like 1.5, 2.1, 10.5. This lets you insert cues between existing ones without renumbering. Cue 1.5 sits between Cue 1 and Cue 2.
+Cue 1.5 Record Enter — inserts a new cue between 1 and 2.
+
+================================================================================
+SECTION 5: PLAYING BACK CUES
+================================================================================
+
+THE GO BUTTON
+The most important button on the console. Pressing GO fires the next cue in the cue list. The pending cue (shown in yellow) becomes the active cue (shown in red/orange).
+
+THE BACK BUTTON
+Goes back to the previous cue, replaying it. Useful for resetting after a mistake.
+
+STOP / BACK
+Stops a running fade mid-transition. Pressing it again reverses the fade.
+
+FIRING A SPECIFIC CUE
+Cue 5 Go Enter — fires cue 5 directly, regardless of where you are in the sequence.
+
+LOADING A CUE WITHOUT FIRING
+Cue 5 Enter — loads cue 5 as the pending cue. The next GO press will fire it.
+
+RATE
+You can change the playback rate of a running cue in real time. Rate 50 Enter slows it to half speed. Rate 200 Enter doubles it. Rate 100 Enter restores normal speed.
+
+CUE PLAYBACK INDICATOR COLOURS
+White = channel in manual control
+Red/Orange = channel being controlled by the active cue
+Yellow = channel as it will be in the pending cue
+Cyan = channel in a submaster
+Magenta = channel being tracked from a previous cue (not explicitly recorded in this cue)
+
+TRACKING
+Eos uses tracking by default. If channel 1 is at 50% in Cue 1 and you don't record it in Cue 2, it stays at 50% in Cue 2. This is called tracking through. It is efficient but requires discipline when recording.
+To block tracking at a specific cue: record the channel at a specific value in that cue. Or use Block attribute.
+
+================================================================================
+SECTION 6: GROUPS
+================================================================================
+
+WHAT IS A GROUP
+A group is a saved selection of channels. Pressing Group 1 selects all channels in the group instantly. Groups do not store levels — only which channels are included.
+
+CREATING A GROUP
+Select your channels: Chan 1 Thru 10 Enter
+Group 5 Record Enter — saves the selection as Group 5
+Group 5 Label Frontlight Enter — labels it
+
+USING A GROUP
+Group 5 Enter — selects all channels in the group
+Group 5 At 75 Enter — selects and sets intensity in one step
+Group 5 Full Enter — group to full
+
+PRO TIP: Build groups for every fixture type, every position, and every colour. During a show you can say "Group 3 At 50" and instantly control all your moving lights.
+
+================================================================================
+SECTION 7: PALETTES
+================================================================================
+
+WHAT ARE PALETTES
+Palettes are saved parameter snapshots. There are four types:
+- Intensity Palettes: saved intensity levels (e.g. "Half", "Quarter")
+- Colour Palettes: saved colour combinations (e.g. "Warm Amber", "Deep Blue")
+- Focus Palettes: saved pan/tilt positions (e.g. "Centre Stage", "Stage Left")
+- Beam Palettes: saved beam parameters (e.g. "Spot", "Wash", "Gobo 3")
+
+WHY PALETTES ARE POWERFUL
+When you use a palette in a cue, the cue references the palette — it does not hard-record the values. If you update the palette, every cue that uses it updates automatically. This is how professionals manage colour across a whole show in seconds.
+
+CREATING A COLOUR PALETTE
+Select channels, set colour using encoders.
+Color Palette 1 Record Enter — saves as Colour Palette 1
+Color Palette 1 Label Warm Amber Enter
+
+APPLYING A PALETTE
+Chan 1 Thru 10 Color Palette 3 Enter — applies colour palette 3 to channels 1-10
+
+UPDATING A PALETTE
+Change the colour on a channel that uses the palette, then:
+Color Palette 3 Update Enter — updates the palette, and all cues using it update instantly.
+
+FOCUS PALETTES (positions)
+Focus palettes save Pan and Tilt positions. Every moving light position you use regularly should be a focus palette.
+Chan 1 Focus Palette 1 Record Enter — saves current pan/tilt as Focus Palette 1
+Chan 1 Thru 5 Focus Palette 2 Enter — applies Focus Palette 2 to channels 1-5
+
+================================================================================
+SECTION 8: EFFECTS
+================================================================================
+
+WHAT ARE EFFECTS
+Effects are automated, repeating parameter movements — chases, pulses, waves, random flickers. They run continuously on channels until stopped.
+
+APPLYING A BUILT-IN EFFECT
+Chan 1 Thru 8 Effect 901 Enter — applies effect 901 (a standard intensity chase)
+
+Eos has a library of built-in effects starting at 901:
+901 — Intensity chase
+902 — Intensity random
+911 — Colour chase
+915 — Pan/Tilt circle
+920 — Strobe
+
+EFFECT PARAMETERS
+After applying an effect, use encoders to adjust:
+Rate — speed of the effect (percentage, 100 = normal)
+Size — amplitude of the effect
+Offset — phase offset between channels (creates wave instead of unison)
+Basis — which parameter the effect runs on
+
+STOPPING AN EFFECT
+Chan 1 Effect Stop Enter — removes the effect from that channel
+
+RECORDING A CUSTOM EFFECT
+You can build effects from scratch in the Effect editor. Navigate to Effect, select parameters, draw a waveform, set rate and size.
+
+================================================================================
+SECTION 9: SUBMASTERS
+================================================================================
+
+WHAT IS A SUBMASTER
+A submaster (sub) is a manual fader that controls a look independently from cue playback. You can bump a submaster to add a look on top of what a cue is doing. Subs are additive — they add to, not replace, cue output.
+
+RECORDING A SUBMASTER
+Set up your look in Live mode, then:
+Sub 1 Record Enter — saves the current look to Submaster 1
+Sub 1 Label Warm Wash Enter
+
+USING SUBMASTERS
+Bring up the physical fader to add the look. The higher the fader, the more the submaster contributes.
+
+SUB MODES
+HTP (Highest Takes Precedence) — the sub adds intensity if it's higher than the cue.
+LTP (Latest Takes Precedence) — the sub takes control of the parameter regardless.
+Exclusive — bringing up the sub fades all other submasters down.
+
+BUMP BUTTONS
+Each submaster has a bump button that momentarily brings the sub to full regardless of fader position.
+
+================================================================================
+SECTION 10: MACROS
+================================================================================
+
+WHAT IS A MACRO
+A macro is a recorded sequence of keystrokes that the console plays back automatically. Macros can do anything a human can do on the keyboard, at any speed.
+
+RECORDING A MACRO
+Press Learn (or Macro, Enter to get into learn mode).
+Macro 1 Learn Enter — starts recording Macro 1.
+Perform your keystrokes.
+Press Learn again to stop recording.
+
+RUNNING A MACRO
+Macro 1 Enter — fires Macro 1.
+You can also assign macros to cue follow actions: Cue 5 Execute Macro 1 Enter.
+
+USEFUL MACRO EXAMPLES
+- Blackout and reset: Chan 1 Thru 512 At Out Enter, followed by Go
+- Announce a scene change via Learn recording
+- Set all moving lights to home position
+- Switch between colour palettes on a schedule
+
+================================================================================
+SECTION 11: PATCHING — ASSIGNING FIXTURES
+================================================================================
+
+WHAT IS PATCHING
+Patching is the process of telling the console which DMX address each fixture is receiving, and what type of fixture it is. This must be done before you can control fixtures.
+
+ENTERING PATCH MODE
+Press the Patch key (or tap Patch on touchscreen Setup area).
+The display shows your current patch table.
+
+PATCHING A SIMPLE DIMMER
+Chan 1 Address 1 Enter — channel 1 controls DMX address 1
+Chan 2 Address 2 Enter — channel 2 controls DMX address 2
+You can patch multiple channels at once:
+Chan 1 Thru 10 Address 1 Enter — patches channels 1-10 sequentially starting at DMX address 1
+
+PATCHING AN INTELLIGENT FIXTURE
+You must assign a fixture type from the library first.
+Chan 1 Type [fixture name] Enter — assigns the fixture profile
+Chan 1 Address 1 Enter — assigns the starting DMX address
+The console automatically uses the correct number of DMX channels based on the fixture profile.
+
+FIXTURE LIBRARY
+Eos has a built-in fixture library with thousands of fixture profiles. When you type a fixture name, the console searches the library. Always use the exact manufacturer name and model. For example: "Robe Pointe" or "Martin MAC Aura XB" or "Chauvet Professional Maverick MK2".
+
+UNIVERSES
+Each DMX universe has 512 channels. Universe 1 is addresses 1-512. Universe 2 is addresses 513-1024 (or written as 2/1 through 2/512).
+To patch to universe 2: Chan 1 Address 2/1 Enter
+
+LABELLING CHANNELS IN PATCH
+Chan 1 Label Key Light SR Enter — gives channel 1 a descriptive name visible in all views.
+
+CHECKING YOUR PATCH
+In Patch mode, the patch table shows all channels, their addresses, fixture types, and labels.
+
+UNPATCHING
+Chan 1 Unpatch Enter — removes the channel from DMX control. The channel number still exists but has no DMX output.
+
+COPYING PATCH
+Chan 1 Copy To 2 Enter — copies all patch settings from channel 1 to channel 2.
+
+EXITING PATCH MODE
+Press Live to return to Live mode. Always remember to exit patch mode — you cannot run a show from patch mode.
+
+================================================================================
+SECTION 12: SHOW CONTROL — OSC, MIDI, AND EXTERNAL CONTROL
+================================================================================
+
+OSC (OPEN SOUND CONTROL)
+OSC is the primary protocol for external control of Eos. It uses UDP network messages.
+RX Port: 3032 (console receives commands)
+TX Port: 3033 (console sends feedback)
+The console must be configured with OSC enabled and the TX target IP set.
+
+KEY OSC COMMANDS (for technical reference)
+Go: /eos/key/go
+Back: /eos/key/back
+Set intensity: /eos/user/1/chan/1/param/intensity with float value 0.0-100.0
+Send command: /eos/user/1/newcmd with string "Cue 5 Go Enter"
+Fire macro: /eos/user/1/macro/5/fire
+
+MIDI SHOW CONTROL (MSC)
+Eos can receive MSC to fire cues, run submasters, and execute macros. Useful for integration with QLab, show control systems, and automation.
+
+CONTACT CLOSURES
+The console has contact closure inputs for simple GO triggers from buttons, doorbells, or automation systems.
+
+ARTNET AND SACN OUTPUT
+Eos outputs DMX over Art-Net and sACN as well as physical DMX ports. This allows control of DMX over ethernet networks.
+
+================================================================================
+SECTION 13: NETWORK AND SYSTEM SETUP
+================================================================================
+
+NETWORK SETUP
+Eos uses two network interfaces — one for ETC's proprietary ETCNet protocol (for wings, remote displays, and node communication) and one for general network (OSC, Art-Net, sACN).
+
+For Nomad on a Mac or PC:
+The software uses the standard network interface. OSC TX and RX are configured in Setup → System → Show Control → OSC.
+
+IP ADDRESS CONFIGURATION
+Eos typically uses the 10.101.x.x range for ETCNet and your local network range for general OSC/Art-Net.
+When running Nomad on a Mac and sending OSC from the same machine, use 127.0.0.1 (localhost) as the OSC TX destination.
+
+SHOW FILES
+Shows are saved as .esf3 files. Always save to multiple locations — internal storage and USB.
+File → Save — saves to current location
+File → Save As — saves to a new name or location
+File → Open — opens a saved show
+Always test your backup file before the show.
+
+================================================================================
+SECTION 14: COMMON WORKFLOWS — STEP BY STEP
+================================================================================
+
+WORKFLOW: STARTING A NEW SHOW FROM SCRATCH
+Step 1. Open Eos or Nomad. Go to File → New Show.
+Step 2. Go to Setup → System → Show Settings. Enter show name, venue, date.
+Step 3. Press Patch to enter Patch mode.
+Step 4. Patch all your fixtures: channel numbers, DMX addresses, fixture types, labels.
+Step 5. Press Live to return to Live mode.
+Step 6. Build groups for all fixture types and positions.
+Step 7. Build colour palettes for your key colours.
+Step 8. Build focus palettes for all key positions.
+Step 9. Start recording cues.
+
+WORKFLOW: RECORDING A BASIC STAGE LOOK AS A CUE
+Step 1. In Live mode, select channels: Chan 1 Thru 10 Enter
+Step 2. Set intensity: At 80 Enter
+Step 3. Select moving lights: Chan 11 Thru 20 Enter
+Step 4. Apply colour palette: Color Palette 3 Enter
+Step 5. Apply focus palette: Focus Palette 5 Enter
+Step 6. Record: Cue 10 Record Enter
+Step 7. Set time: Cue 10 Time 3 Enter
+Step 8. Label: Cue 10 Label Opening Wash Enter
+
+WORKFLOW: EDITING A CUE WITHOUT AFFECTING THE SHOW
+Step 1. Press Blind to enter Blind mode.
+Step 2. Navigate to the cue: Cue 10 Enter
+Step 3. Make your changes using normal commands.
+Step 4. Press Update Enter to save.
+Step 5. Press Live to return.
+
+WORKFLOW: ADDING A MOVING LIGHT TO AN EXISTING CUE MID-SHOW
+Step 1. In Live mode, select the channel: Chan 15 Enter
+Step 2. Adjust parameters to desired values.
+Step 3. In the cue list, select the cue to update: Cue 10 Enter (just highlights it)
+Step 4. Record Only Enter — captures only what you changed into Cue 10.
+
+WORKFLOW: BUILDING A COLOUR CHASE EFFECT
+Step 1. Select channels: Chan 1 Thru 8 Enter
+Step 2. Apply colour palette as base: Color Palette 1 Enter
+Step 3. Apply an intensity effect: Effect 901 Enter
+Step 4. Adjust rate using encoders.
+Step 5. Adjust offset to create a wave: turn Offset encoder.
+Step 6. Record into a cue when happy: Cue 20 Record Enter
+
+WORKFLOW: PATCHING A MOVING LIGHT
+Step 1. Press Patch to enter Patch mode.
+Step 2. Select the channel: Chan 50 Enter
+Step 3. Assign fixture type: Chan 50 Type Robe Pointe Enter (console searches library)
+Step 4. Assign DMX address: Chan 50 Address 100 Enter
+Step 5. Label: Chan 50 Label SR Moving 1 Enter
+Step 6. Press Live to exit patch.
+Step 7. Press Highlight then select the channel to verify it responds.
+
+WORKFLOW: SETTING UP SUBMASTERS FOR A CONCERT
+Step 1. Build a look for each sub — e.g. Sub 1 = warm front wash.
+Step 2. In Live mode, set channels to the desired look.
+Step 3. Sub 1 Record Enter.
+Step 4. Sub 1 Label Warm Front Enter.
+Step 5. Repeat for each sub.
+Step 6. During the show, ride the faders to mix looks on top of cue playback.
+
+WORKFLOW: SAVING AND BACKING UP YOUR SHOW
+Step 1. File → Save (saves to current show file).
+Step 2. File → Save As → USB drive (saves a backup copy).
+Step 3. Before the show, verify the backup opens correctly on a second machine if possible.
+
+================================================================================
+SECTION 15: TROUBLESHOOTING — COMMON PROBLEMS AND SOLUTIONS
+================================================================================
+
+PROBLEM: A channel is not responding to commands
+Check 1: Is the channel patched? Go to Patch mode and verify it has a DMX address.
+Check 2: Is the channel parked? Park mode locks channels. Unpark it: Chan X Unpark Enter.
+Check 3: Is there a submaster overriding it? Check if any subs are raised.
+Check 4: Is the fixture receiving DMX? Use a DMX tester or the fixture's own display.
+Check 5: Is the console outputting? Check Setup → System → Outputs.
+
+PROBLEM: Cues are not fading — everything snaps
+Check: The cue time may be set to 0. Cue X Time 3 Enter to set a 3-second fade.
+Check: You may be in Snap mode. Look for Snap indicator in the display.
+
+PROBLEM: Moving light is not going to the right position
+Check 1: Is the correct fixture type assigned in patch? Wrong profile = wrong parameter mapping.
+Check 2: Is Pan/Tilt reversed or inverted? Check fixture options in patch.
+Check 3: Is the fixture responding to any DMX? Use highlights to test.
+
+PROBLEM: OSC commands not working
+Check 1: Is OSC enabled in Setup → System → Show Control → OSC?
+Check 2: Is the RX port set to 3032?
+Check 3: Is the TX IP address set correctly (127.0.0.1 for Nomad on same machine)?
+Check 4: Is the TX port set to 3033?
+Check 5: Are the path formats correct? GET paths must not have user prefix. Command paths use /eos/user/1/newcmd.
+
+PROBLEM: Show file will not open
+Try opening on a different version of Eos software. Show files are generally backward compatible but not always forward compatible.
+
+PROBLEM: Tracking is causing unexpected levels
+Channels that track from earlier cues can cause surprise levels in later cues. To fix: record the channel at its desired level in the cue where the problem occurs. This places a hard value and stops the unwanted tracking.
+
+PROBLEM: Multiple cue lists conflicting
+Each cue list has an HTP or priority setting. Check Setup → Cue List Options to manage priority between lists.
+
+PROBLEM: Encoders not controlling the right parameters
+Make sure the correct channel is selected. Make sure you are in the correct mode (Live, not Blind). Check the encoder bay display — it shows which parameter each encoder controls.
+
+================================================================================
+SECTION 16: KEYBOARD SHORTCUTS AND SPEED TIPS
+================================================================================
+
+FASTEST INTENSITY COMMANDS
+Full — sets selected channels to 100% (one button)
+Out — sets selected channels to 0% (one button)
+At 5 — sets to 50% (typing just a single digit multiplies by 10)
+At 75 — sets to 75%
+
+NUMERIC TRICKS
+On the keypad, single digits set intensity in multiples of 10.
+At 5 = 50%, At 7 = 70%, At 0 = 0%, At Full = 100%
+
+CHANNEL SELECTION SHORTCUTS
+Chan 1 Thru 10 — channels 1 through 10
+Chan 1 + 5 + 10 — channels 1, 5, and 10 only
+Chan 1 Thru 10 - 5 — channels 1 through 10 except 5
+Chan 1 Thru 10 Odd — odd channels only (1, 3, 5, 7, 9)
+Chan 1 Thru 10 Even — even channels only (2, 4, 6, 8, 10)
+
+LAST SELECTION
+Pressing the period key (.) re-selects whatever you had selected previously.
+
+UNDO
+Control + Z on keyboard, or Undo button on console. Multiple undo levels available.
+
+CLEAR
+Clear removes the last entry from the command line without executing. Press Clear twice to completely clear the command line.
+
+SNEAK KEY
+Sneak returns selected channels to their cue-controlled values over a programmable time. Excellent for releasing manual control without a hard snap.
+
+LEARN MODE (MACROS)
+Learn key starts macro recording. Everything you press is recorded. Press Learn again to stop.
+
+================================================================================
+SECTION 17: PROFESSIONAL TIPS FROM EXPERIENCED OPERATORS
+================================================================================
+
+ALWAYS LABEL EVERYTHING
+Label every cue, every group, every palette, every submaster, and every channel in patch. A show with unlabelled cues is dangerous in a crisis. You cannot rely on memory during a live performance.
+
+USE DECIMAL CUE NUMBERS
+Never renumber your entire cue list to insert a cue. Insert fractional cues: 5.5 between 5 and 6, 5.1 through 5.9 for fine insertions.
+
+BUILD PALETTES FIRST
+Before recording any cues, build your colour, focus, and beam palettes. Cues that reference palettes are far easier to maintain and update than cues with hard-recorded values.
+
+RECORD ONLY IS YOUR FRIEND
+Use Record Only (not Record) when adding to existing cues mid-show. Record captures everything on stage. Record Only captures only what you have explicitly changed. This protects your tracking data.
+
+THE BLIND-EDIT HABIT
+Always edit cues in Blind mode during a show. Never edit in Live mode while cues are running. The audience should never see your editing work.
+
+SAVE CONSTANTLY
+Save every 10-15 minutes during pre-production. Save to USB at every break. There is no autosave that protects against a power failure.
+
+USE GROUPS FOR SELECTION, PALETTES FOR VALUES
+Groups are for selecting channels quickly. Palettes are for applying consistent values. Never record a palette and use it as a group selector.
+
+PARK YOUR WORK LIGHTS
+Park house lights, work lights, and practicals early in setup. A parked channel cannot accidentally go to zero during a cue playback accident.
+
+HEARTBEAT YOUR SHOW
+During multi-day festivals and long runs, open your backup show file on a separate machine at least once per day and verify it works. Show files can become corrupted.
+
+TEST OSC BEFORE SHOWTIME
+If using OSC control (via EosAI or any external system), always test every command type at least 30 minutes before doors open. OSC failures at showtime are difficult to debug quickly.
+
+================================================================================
+SECTION 18: CONSOLE-SPECIFIC NOTES
+================================================================================
+
+EOS TI SPECIFIC
+The Ti has 60 physical faders. Faders 1-20 are Page A submasters, 21-40 are Page B, 41-60 are Page C by default. You can reassign this in setup. The motorised faders move automatically when you change pages.
+
+ION XE SPECIFIC
+20 physical faders. Fader pages accessed via the Page button. The Ion Xe is the most common console for touring. Its reduced fader count is not a limitation — most operators use far fewer than 20 subs.
+
+ELEMENT 2 SPECIFIC
+40 physical faders but in a simplified layout. No motorised faders. Good for fixed installations where the operator always works from the same fader page. The touchscreen is smaller than Ti and Ion Xe.
+
+NOMAD SPECIFIC
+No physical controls. All control via keyboard shortcuts and touchscreen. The keyboard shortcuts are identical to hardware consoles. Nomad requires an ETC Gadget II or similar USB interface for physical DMX output. Network DMX (Art-Net, sACN) works natively.
+OSC on Nomad: because the software and the OSC bridge run on the same machine, always use 127.0.0.1 as the OSC TX IP address. RX port 3032, TX port 3033.
+
+================================================================================
+SECTION 19: GLOSSARY OF TERMS
+================================================================================
+
+Additive — combining multiple sources (subs, cues) where the highest value wins (HTP)
+Assert — re-firing a cue to restore all its values to output
+Attribute — a specific parameter type (intensity, colour, position, beam)
+Block — a cue attribute that stops tracking values from passing through
+Bump — a momentary full activation of a submaster via its button
+Channel — a logical number assigned to a fixture
+Chase — a sequence of automated level changes creating movement
+Cue — a stored state of all fixture parameters with timing information
+Dead black out (DBO) — all output to zero instantly
+Desk channel — another term for a dimmer channel
+DMX — Digital Multiplex, the standard lighting control protocol (512 channels per universe)
+Encoder — a rotary control knob for parameter adjustment
+ESF3 — the Eos show file format (.esf3 extension)
+Fade — a timed transition between two values
+Follow — automatic triggering of the next cue after a set time
+Gel — a coloured filter placed in front of a conventional lamp
+Grand Master — a master fader that scales all output
+Group — a saved selection of channels (no levels stored)
+HTP — Highest Takes Precedence, intensity mixing rule
+LTP — Latest Takes Precedence, parameter mixing rule
+Macro — a recorded sequence of keystrokes
+Manual — a channel that has been touched and taken out of cue control
+Palette — a saved set of parameter values (colour, focus, beam, intensity)
+Park — locking a channel at a fixed value independent of cue playback
+Patch — assigning DMX addresses and fixture profiles to channels
+Playback — the process of firing cues during a show
+Rate — the speed modifier for a cue fade or effect
+Record Only — capturing only explicitly changed parameters into a cue
+Sneak — fading a channel back to its cue-controlled value
+Sub — Submaster, a manual fader controlling a saved look
+Tracking — the behaviour where unrecorded parameters carry forward from previous cues
+Universe — 512 DMX channels, one complete DMX data stream
+Update — saving manual changes back into an existing cue
+
+================================================================================
+SECTION 20: QUICK REFERENCE — MOST COMMON COMMANDS
+================================================================================
+
+SELECT CHANNELS:           Chan 1 Enter
+SELECT RANGE:              Chan 1 Thru 10 Enter
+SET INTENSITY:             Chan 1 At 75 Enter
+FULL INTENSITY:            Chan 1 Full Enter
+ZERO INTENSITY:            Chan 1 Out Enter
+APPLY COLOUR PALETTE:      Chan 1 Color Palette 3 Enter
+APPLY FOCUS PALETTE:       Chan 1 Focus Palette 2 Enter
+APPLY BEAM PALETTE:        Chan 1 Beam Palette 1 Enter
+SELECT GROUP:              Group 5 Enter
+RECORD CUE:                Cue 10 Record Enter
+RECORD ONLY:               Cue 10 Record Only Enter
+UPDATE CUE:                Update Enter
+SET CUE TIME:              Cue 10 Time 3 Enter
+LABEL CUE:                 Cue 10 Label My Scene Enter
+GO (next cue):             [GO button]
+BACK (previous cue):       [BACK button]
+FIRE SPECIFIC CUE:         Cue 10 Go Enter
+DELETE CUE:                Cue 10 Delete Enter Enter
+RECORD GROUP:              Group 5 Record Enter
+RECORD COLOUR PALETTE:     Color Palette 3 Record Enter
+APPLY EFFECT:              Chan 1 Thru 8 Effect 901 Enter
+STOP EFFECT:               Chan 1 Effect Stop Enter
+RECORD SUBMASTER:          Sub 1 Record Enter
+ENTER PATCH MODE:          [PATCH key]
+PATCH CHANNEL:             Chan 1 Address 1 Enter
+ASSIGN FIXTURE TYPE:       Chan 1 Type [name] Enter
+UNPATCH:                   Chan 1 Unpatch Enter
+EXIT PATCH MODE:           [LIVE key]
+PARK CHANNEL:              Chan 1 Park Enter
+UNPARK CHANNEL:            Chan 1 Unpark Enter
+HIGHLIGHT MODE:            [HIGHLIGHT key]
+SNEAK:                     Chan 1 Sneak Enter
+FIRE MACRO:                Macro 1 Enter
+UNDO:                      [UNDO key or Ctrl+Z]
+CLEAR COMMAND LINE:        [CLEAR key]
+SAVE SHOW:                 File → Save
+
+================================================================================
+END OF KNOWLEDGE BASE
+ETC Eos Family Console AI Guide — ElevenLabs Agent Knowledge Base v1.0
+================================================================================
