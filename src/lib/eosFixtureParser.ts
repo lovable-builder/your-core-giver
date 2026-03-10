@@ -87,6 +87,54 @@ export function searchEOSFixtures(
 }
 
 /**
+ * Extract the fixture-type portion from a natural language patching prompt.
+ * E.g. "patch channel 2 address 3 fixture type mac 2000" → "mac 2000"
+ *       "patch chan 5 type source four" → "source four"
+ */
+export function extractFixtureTypeFromPrompt(prompt: string): string | null {
+  const match = prompt.match(/(?:fixture\s+)?type\s+(.+?)(?:\s+(?:at|on|to|address|addr|chan(?:nel)?|universe)\s|$)/i);
+  if (match) return match[1].trim();
+  // Also try end-of-string after "type"
+  const endMatch = prompt.match(/(?:fixture\s+)?type\s+(.+)$/i);
+  if (endMatch) return endMatch[1].trim();
+  return null;
+}
+
+/**
+ * Fuzzy match returning the top N scored fixtures.
+ * Each result includes a normalized score (0–1).
+ * Used for disambiguation when multiple fixtures match similarly.
+ */
+export function fuzzyMatchFixtures(
+  fixtures: EOSFixture[],
+  query: string,
+  limit = 5
+): Array<EOSFixture & { score: number }> {
+  if (!query.trim()) return [];
+  const q = query.toLowerCase().replace(/[_\-]/g, " ");
+  const terms = q.split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return [];
+
+  const scored: Array<EOSFixture & { score: number }> = [];
+
+  for (const f of fixtures) {
+    const searchable = `${f.m} ${f.t} ${f.n}`.toLowerCase().replace(/[_\-]/g, " ");
+    let score = 0;
+    for (const term of terms) {
+      if (searchable.includes(term)) score++;
+    }
+    const normalized = score / terms.length;
+    if (normalized >= 0.5) {
+      scored.push({ ...f, score: normalized });
+    }
+  }
+
+  // Sort by score desc, then by name length (prefer shorter/simpler names)
+  scored.sort((a, b) => b.score - a.score || a.n.length - b.n.length);
+  return scored.slice(0, limit);
+}
+
+/**
  * Fuzzy match a natural language fixture name to an EOS type string.
  * Used by voice/AI commands to resolve "source four" → "Src_Four_750"
  */

@@ -1,7 +1,7 @@
 // Update this page (the content is just a fallback if you fail to update the page)
 import { useState, useEffect, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
-import { loadEOSFixtures, fuzzyMatchFixture } from "@/lib/eosFixtureParser";
+import { loadEOSFixtures, fuzzyMatchFixture, fuzzyMatchFixtures, extractFixtureTypeFromPrompt } from "@/lib/eosFixtureParser";
 
 import ConsoleSteps3D from "@/components/ConsoleSteps3D";
 import VoiceMicButton from "@/components/VoiceMicButton";
@@ -707,6 +707,12 @@ export default function App() {
     role: "user" | "assistant";
     text: string;
     commands?: Array<{ path: string; value?: string; description: string }>;
+    choices?: Array<{
+      label: string;
+      fixtureType: string;
+      dmxChannels: number;
+      originalPrompt: string;
+    }>;
   }>>([]);
   const [aiOscPreviewMode, setAiOscPreviewMode] = useState(false);
 
@@ -1208,14 +1214,47 @@ export default function App() {
         }
       }
 
-      // Fuzzy match fixture type from prompt for context
+      // Disambiguation: check if prompt mentions a fixture type and find matches
       let resolvedFixtureType: string | undefined;
       try {
         const eosFixtures = await loadEOSFixtures();
         if (eosFixtures.length > 0) {
-          const fixtureMatch = fuzzyMatchFixture(eosFixtures, prompt);
-          if (fixtureMatch) {
-            resolvedFixtureType = fixtureMatch.t;
+          const typeQuery = extractFixtureTypeFromPrompt(prompt);
+          if (typeQuery) {
+            const matches = fuzzyMatchFixtures(eosFixtures, typeQuery, 8);
+            
+            if (matches.length === 0) {
+              // No matches — let AI handle it as-is
+            } else if (matches.length === 1 || (matches[0].score > 0.8 && (matches.length === 1 || matches[0].score - matches[1].score > 0.2))) {
+              // Single confident match — use it directly
+              resolvedFixtureType = matches[0].t;
+            } else {
+              // Multiple close matches — show disambiguation choices
+              const choices = matches.slice(0, 6).map(m => ({
+                label: `${m.m}: ${m.n} (${m.ch}ch)`,
+                fixtureType: m.t,
+                dmxChannels: m.ch,
+                originalPrompt: prompt.replace(
+                  new RegExp(typeQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
+                  m.t
+                ),
+              }));
+              
+              setAiOscHistory(prev => [...prev, {
+                role: "assistant",
+                text: `I found ${matches.length} fixture types matching "${typeQuery}". Which one did you mean?`,
+                choices,
+              }]);
+              setAiOscLoading(false);
+              setAiOscInput("");
+              return;
+            }
+          } else {
+            // No explicit type mention — try general fuzzy match
+            const fixtureMatch = fuzzyMatchFixture(eosFixtures, prompt);
+            if (fixtureMatch) {
+              resolvedFixtureType = fixtureMatch.t;
+            }
           }
         }
       } catch { /* ignore */ }
@@ -2313,6 +2352,55 @@ export default function App() {
                                 </button>
                               )}
                             </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Disambiguation choices */}
+                      {msg.choices && msg.choices.length > 0 && (
+                        <div style={{ paddingLeft: "30px", display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" }}>
+                          {msg.choices.map((choice, ci) => (
+                            <button
+                              key={ci}
+                              onClick={() => executeAiOscCommands(choice.originalPrompt)}
+                              style={{
+                                display: "flex", alignItems: "center", gap: "10px",
+                                background: "rgba(0,255,200,0.04)",
+                                border: "1px solid rgba(0,255,200,0.15)",
+                                borderRadius: "8px",
+                                padding: "8px 14px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                                textAlign: "left",
+                                width: "100%",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = "rgba(0,255,200,0.5)";
+                                e.currentTarget.style.background = "rgba(0,255,200,0.08)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = "rgba(0,255,200,0.15)";
+                                e.currentTarget.style.background = "rgba(0,255,200,0.04)";
+                              }}
+                            >
+                              <span style={{
+                                fontFamily: "'Space Mono', monospace", fontSize: "11px",
+                                color: "#00ffc8", fontWeight: "700",
+                              }}>
+                                {choice.fixtureType}
+                              </span>
+                              <span style={{
+                                fontSize: "11px", color: "#aaa",
+                                fontFamily: "'DM Sans', sans-serif", flex: 1,
+                              }}>
+                                {choice.label}
+                              </span>
+                              <span style={{
+                                fontFamily: "'Space Mono', monospace", fontSize: "9px",
+                                color: "#555", flexShrink: 0,
+                              }}>
+                                SELECT →
+                              </span>
+                            </button>
                           ))}
                         </div>
                       )}
