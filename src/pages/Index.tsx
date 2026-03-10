@@ -1428,17 +1428,23 @@ export default function App() {
   const handleConsoleSelect = async (con) => {
     setSelectedConsole(con);
     setShowConsoleSelect(false);
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", text: con.name },
-      {
-        role: "assistant",
-        text: `${con.name} locked in. Generating your guide...`,
-        type: "loading",
-      },
-    ]);
-    await fetchSteps(pendingPrompt, con.name);
-    setPendingPrompt(null);
+    if (pendingPrompt) {
+      // User already typed a question, then picked a console — generate the guide
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", text: con.name },
+        { role: "assistant", text: `${con.name} locked in. Generating your guide...`, type: "loading" },
+      ]);
+      await fetchSteps(pendingPrompt, con.name);
+      setPendingPrompt(null);
+    } else {
+      // Initial console selection — just confirm and wait for user's question
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", text: con.name },
+        { role: "assistant", text: `**${con.name}** selected. What would you like help with?` },
+      ]);
+    }
   };
 
   // ── RENDER ───────────────────────────────────────────────────────────────────
