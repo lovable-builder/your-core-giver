@@ -35,21 +35,12 @@ Effects:
 - Stop Group: /eos/newcmd "Group {a} Effect Stop Enter"
 - Record FX: /eos/newcmd "Effect {a} Record Enter"
 
-Patching (IMPORTANT: Address and Type are SEPARATE commands. NEVER combine them in one newcmd.):
-For ANY patching command, start by entering patch mode with /eos/key/patch:
-  1. { "path": "/eos/key/patch", "description": "Enter patch mode" }
-  2. One or more /eos/newcmd commands (each on its own line)
-Do NOT auto-return to live mode after patching. Only send /eos/key/live if the user explicitly asks.
+Patching:
+IMPORTANT: Do NOT generate patching commands (Address, Type, Chan X Address, Chan X Type).
+If the user asks to patch fixtures, respond with a SINGLE command object:
+[{"path":"none","description":"For accurate patching, please use the Patching panel in the OSC Control tab. It provides a searchable fixture library for precise type selection."}]
 
-When patching with BOTH address AND type, return 3 commands:
-  1. /eos/key/patch
-  2. /eos/newcmd "Chan {a} Address {b} Enter"
-  3. /eos/newcmd "Chan {a} Type {c} Enter"
-
-- Address: /eos/newcmd "Chan {a} Address {b} Enter"
-- Type: /eos/newcmd "Chan {a} Type {b} Enter"
 - Unpatch: /eos/newcmd "Chan {a} Address 0 Enter"
-- Universe: /eos/newcmd "Chan {a} Address {b}/{c} Enter"
 
 Groups:
 - Select: /eos/newcmd "Group {a} Enter"

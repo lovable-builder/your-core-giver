@@ -1,7 +1,7 @@
 // Update this page (the content is just a fallback if you fail to update the page)
 import { useState, useEffect, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
-import { loadEOSFixtures, fuzzyMatchFixture, fuzzyMatchFixtures, extractFixtureTypeFromPrompt } from "@/lib/eosFixtureParser";
+import PatchPanel from "@/components/PatchPanel";
 
 import ConsoleSteps3D from "@/components/ConsoleSteps3D";
 import VoiceMicButton from "@/components/VoiceMicButton";
@@ -48,11 +48,7 @@ const OSC_COMMANDS = {
     { label: "Record FX", path: "/eos/newcmd", value: "Effect {a} Record Enter", params: ["Effect #"] },
   ],
   Patching: [
-    { label: "Patch Mode", path: "/eos/key/patch", params: [], isKey: true },
-    { label: "Address", path: "/eos/newcmd", value: "Chan {a} Address {b} Enter", params: ["Channel", "DMX Addr"] },
-    { label: "Type", path: "/eos/newcmd", value: "Chan {a} Type {b} Enter", params: ["Channel", "Fixture Type"] },
     { label: "Unpatch", path: "/eos/newcmd", value: "Chan {a} Address 0 Enter", params: ["Channel"] },
-    { label: "Universe", path: "/eos/newcmd", value: "Chan {a} Address {b}/{c} Enter", params: ["Chan", "Universe", "Addr"] },
   ],
   Groups: [
     { label: "Select", path: "/eos/newcmd", value: "Group {a} Enter", params: ["Group #"] },
@@ -1158,7 +1154,7 @@ export default function App() {
   }, [oscHost, oscPort]);
 
   // Execute AI OSC commands — with preset macro interception
-  const executeAiOscCommands = useCallback(async (prompt: string, skipUserMessage = false, forceFixtureType?: string) => {
+  const executeAiOscCommands = useCallback(async (prompt: string, skipUserMessage = false) => {
     if (!prompt.trim()) return;
     
     setAiOscLoading(true);
@@ -1213,71 +1209,15 @@ export default function App() {
         }
       }
 
-      // Fixture type resolution
-      let resolvedFixtureType: string | undefined = forceFixtureType;
-      if (!resolvedFixtureType) {
-        try {
-          const eosFixtures = await loadEOSFixtures();
-          if (eosFixtures.length > 0) {
-            let typeQuery = extractFixtureTypeFromPrompt(prompt);
-
-            // Heuristic for prompts like:
-            // "patch channel 400 address 600 Mac 2000"
-            // "patch ch 12 adress 101 aura"
-            if (!typeQuery) {
-              const trailingTypeMatch = prompt.match(/\bpatch\b.*\b(?:address|addr|adress)\b\s+\S+\s+(.+)$/i);
-              if (trailingTypeMatch?.[1]?.trim()) {
-                typeQuery = trailingTypeMatch[1].trim();
-              }
-            }
-
-            if (typeQuery) {
-              const matches = fuzzyMatchFixtures(eosFixtures, typeQuery, 8);
-              const isSimplePatchAddressFlow = /\bpatch\b/i.test(prompt) && /\b(?:address|addr|adress)\b/i.test(prompt);
-
-              if (matches.length === 0) {
-                const fallback = fuzzyMatchFixture(eosFixtures, typeQuery);
-                if (fallback) resolvedFixtureType = fallback.t;
-              } else if (isSimplePatchAddressFlow) {
-                // User asked for a simple flow: always pick best match, no follow-up prompt.
-                resolvedFixtureType = matches[0].t;
-              } else if (
-                matches.length === 1 ||
-                (matches[0].score > 0.8 && (matches.length === 1 || matches[0].score - matches[1].score > 0.2))
-              ) {
-                resolvedFixtureType = matches[0].t;
-              } else {
-                // Multiple close matches — show disambiguation choices
-                const choices = matches.slice(0, 6).map(m => ({
-                  label: `${m.m}: ${m.n} (${m.ch}ch)`,
-                  fixtureType: m.t,
-                  dmxChannels: m.ch,
-                  originalPrompt: prompt.replace(
-                    new RegExp(typeQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
-                    m.t
-                  ),
-                }));
-
-                setAiOscHistory(prev => [...prev, {
-                  role: "assistant",
-                  text: `I found ${matches.length} fixture types matching "${typeQuery}". Which one did you mean?`,
-                  choices,
-                }]);
-                setAiOscLoading(false);
-                setAiOscInput("");
-                return;
-              }
-            } else {
-              // No explicit type mention — try general fuzzy match
-              const fixtureMatch = fuzzyMatchFixture(eosFixtures, prompt);
-              if (fixtureMatch) {
-                resolvedFixtureType = fixtureMatch.t;
-              }
-            }
-          }
-        } catch {
-          /* ignore */
-        }
+      // Redirect patching requests to the Patch Panel
+      if (/\bpatch\b/i.test(prompt) && /\b(address|addr|adress|type|fixture|chan)\b/i.test(prompt)) {
+        setAiOscHistory(prev => [...prev, {
+          role: "assistant",
+          text: "For accurate patching, please use the **Patching** panel in the OSC Control tab. It lets you search and select the exact fixture type from the EOS library.",
+        }]);
+        setAiOscLoading(false);
+        setAiOscInput("");
+        return;
       }
 
       const res = await fetch(
@@ -1295,7 +1235,6 @@ export default function App() {
               activeCue: consoleFeedback.activeCue,
               consoleOnline: consoleFeedback.consoleOnline,
               channelCount: consoleFeedback.channelCount,
-              fixtureType: resolvedFixtureType,
             }
           }),
         }
@@ -1308,35 +1247,7 @@ export default function App() {
       
       const data = await res.json();
       let commands: Array<{ path: string; value?: string; description: string }> = data.commands || [];
-      
-      // Safety net: split combined "Chan X Address Y Type Z Enter" into two separate commands
-      commands = commands.flatMap((cmd: any) => {
-        if (cmd.path === '/eos/newcmd' && cmd.value) {
-          const match = cmd.value.match(/^(Chan\s+\d+)\s+Address\s+(\S+)\s+Type\s+(.+?)\s+Enter$/i);
-          if (match) {
-            return [
-              { path: '/eos/newcmd', value: `${match[1]} Address ${match[2]} Enter`, description: `Patch address ${match[2]}` },
-              { path: '/eos/newcmd', value: `${match[1]} Type ${match[3]} Enter`, description: `Set type ${match[3]}` },
-            ];
-          }
-        }
-        return [cmd];
-      });
 
-      // If we resolved fixture type from official library, enforce it in any Type command
-      if (resolvedFixtureType) {
-        commands = commands.map((cmd: any) => {
-          if (cmd.path !== "/eos/newcmd" || typeof cmd.value !== "string") return cmd;
-          const typeMatch = cmd.value.match(/^(Chan\s+\d+\s+Type\s+)(.+?)(\s+Enter)$/i);
-          if (!typeMatch) return cmd;
-          return {
-            ...cmd,
-            value: `${typeMatch[1]}${resolvedFixtureType}${typeMatch[3]}`,
-            description: `Set channel fixture type to ${resolvedFixtureType}`,
-          };
-        });
-      }
-      
       setAiOscHistory(prev => [...prev, { 
         role: "assistant", 
         text: `Generated ${commands.length} command(s)`, 
@@ -2466,88 +2377,6 @@ export default function App() {
                           ))}
                         </div>
                       )}
-                      {/* Disambiguation choices */}
-                      {msg.choices && msg.choices.length > 0 && (
-                        <div style={{ paddingLeft: "30px", display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" }}>
-                          {msg.choices.map((choice, ci) => {
-                            const isSelected = msg.selectedChoice === choice.fixtureType;
-                            const hasSelection = !!msg.selectedChoice;
-                            return (
-                              <button
-                                key={ci}
-                                disabled={hasSelection}
-                                onClick={() => {
-                                  // Mark this history entry with the selected choice
-                                  setAiOscHistory(prev => prev.map((m, i) =>
-                                    i === idx ? { ...m, selectedChoice: choice.fixtureType } : m
-                                  ));
-                                  // Add selection feedback to chat
-                                  setAiOscHistory(prev => [...prev, {
-                                    role: "user",
-                                    text: `✓ Selected: ${choice.label}`,
-                                  }]);
-                                  // Execute with the rewritten prompt, passing the exact fixture type to skip re-disambiguation
-                                  executeAiOscCommands(choice.originalPrompt, true, choice.fixtureType);
-                                }}
-                                style={{
-                                  display: "flex", alignItems: "center", gap: "10px",
-                                  background: isSelected
-                                    ? "rgba(0,255,200,0.15)"
-                                    : hasSelection
-                                      ? "rgba(255,255,255,0.02)"
-                                      : "rgba(0,255,200,0.04)",
-                                  border: `1px solid ${isSelected ? "rgba(0,255,200,0.6)" : hasSelection ? "rgba(255,255,255,0.05)" : "rgba(0,255,200,0.15)"}`,
-                                  borderRadius: "8px",
-                                  padding: "8px 14px",
-                                  cursor: hasSelection ? "default" : "pointer",
-                                  transition: "all 0.2s",
-                                  textAlign: "left",
-                                  width: "100%",
-                                  opacity: hasSelection && !isSelected ? 0.35 : 1,
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (!hasSelection) {
-                                    e.currentTarget.style.borderColor = "rgba(0,255,200,0.5)";
-                                    e.currentTarget.style.background = "rgba(0,255,200,0.08)";
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (!hasSelection) {
-                                    e.currentTarget.style.borderColor = "rgba(0,255,200,0.15)";
-                                    e.currentTarget.style.background = "rgba(0,255,200,0.04)";
-                                  }
-                                }}
-                              >
-                                {isSelected && (
-                                  <span style={{ color: "#00ffc8", fontSize: "12px", flexShrink: 0 }}>✓</span>
-                                )}
-                                <span style={{
-                                  fontFamily: "'Space Mono', monospace", fontSize: "11px",
-                                  color: isSelected ? "#00ffc8" : hasSelection ? "#555" : "#00ffc8",
-                                  fontWeight: "700",
-                                }}>
-                                  {choice.fixtureType}
-                                </span>
-                                <span style={{
-                                  fontSize: "11px",
-                                  color: isSelected ? "#ccc" : hasSelection ? "#444" : "#aaa",
-                                  fontFamily: "'DM Sans', sans-serif", flex: 1,
-                                }}>
-                                  {choice.label}
-                                </span>
-                                {!hasSelection && (
-                                  <span style={{
-                                    fontFamily: "'Space Mono', monospace", fontSize: "9px",
-                                    color: "#555", flexShrink: 0,
-                                  }}>
-                                    SELECT →
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
                   ))}
                   {aiOscLoading && (
@@ -2721,12 +2550,31 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Commands Grid */}
-                <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                  {OSC_COMMANDS[oscTab].map((cmd, i) => (
-                    <OscCard key={i} cmd={cmd} onSend={sendOsc} />
-                  ))}
-                </div>
+                {/* Commands Grid or Patch Panel */}
+                {oscTab === "Patching" ? (
+                  <PatchPanel
+                    onPatch={async (channel, address, fixtureType) => {
+                      const cmdStr = `Chan ${channel} Address ${address} Type ${fixtureType} Enter`;
+                      sendOsc("/eos/key/patch");
+                      await new Promise(resolve => setTimeout(resolve, 900));
+                      sendOsc("/eos/newcmd", cmdStr);
+                      setAiOscHistory(prev => [...prev, {
+                        role: "assistant",
+                        text: `Patched channel ${channel} → address ${address}, type ${fixtureType}`,
+                        commands: [
+                          { path: "/eos/key/patch", description: "Enter patch mode" },
+                          { path: "/eos/newcmd", value: cmdStr, description: `Patch ch ${channel}` },
+                        ],
+                      }]);
+                    }}
+                  />
+                ) : (
+                  <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                    {OSC_COMMANDS[oscTab].map((cmd, i) => (
+                      <OscCard key={i} cmd={cmd} onSend={sendOsc} />
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Right Column */}
