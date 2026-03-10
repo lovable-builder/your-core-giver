@@ -806,6 +806,8 @@ export default function FixtureLibrary({ onPatch, onRequestPatch, consolePatch =
               </div>
             ))}
           </div>
+            </>
+          )}
         </div>
 
         {/* ── Right Panel: Detail + Patch ── */}
