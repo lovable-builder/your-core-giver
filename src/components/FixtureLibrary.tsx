@@ -91,6 +91,29 @@ export default function FixtureLibrary({ onPatch, onRequestPatch, consolePatch =
   const [filterManufacturer, setFilterManufacturer] = useState("All");
   const [filterCategory, setFilterCategory] = useState("All");
 
+  // EOS Library tab
+  const [libraryMode, setLibraryMode] = useState<"curated" | "eos">("curated");
+  const [eosFixtures, setEosFixtures] = useState<EOSFixture[]>([]);
+  const [eosLoading, setEosLoading] = useState(false);
+  const [eosSearch, setEosSearch] = useState("");
+  const [selectedEos, setSelectedEos] = useState<EOSFixture | null>(null);
+
+  // Load EOS fixtures when switching to EOS tab
+  useEffect(() => {
+    if (libraryMode === "eos" && eosFixtures.length === 0 && !eosLoading) {
+      setEosLoading(true);
+      loadEOSFixtures().then((fixtures) => {
+        setEosFixtures(fixtures);
+        setEosLoading(false);
+      });
+    }
+  }, [libraryMode]);
+
+  const filteredEos = useMemo(() => {
+    if (eosFixtures.length === 0) return [];
+    return searchEOSFixtures(eosFixtures, eosSearch, 100);
+  }, [eosFixtures, eosSearch]);
+
   // Selected fixture
   const [selected, setSelected] = useState<Fixture | null>(null);
   const [selectedMode, setSelectedMode] = useState<FixtureMode | null>(null);
