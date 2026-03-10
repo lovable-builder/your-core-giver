@@ -1231,7 +1231,7 @@ export default function App() {
       }
       
       const data = await res.json();
-      let commands: Array<{ path: string; value?: string; description?: string }> = data.commands || [];
+      let commands: Array<{ path: string; value?: string; description: string }> = data.commands || [];
       
       // Safety net: split combined "Chan X Address Y Type Z Enter" into two separate commands
       commands = commands.flatMap((cmd: any) => {
