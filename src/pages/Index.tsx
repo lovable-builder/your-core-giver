@@ -1845,7 +1845,7 @@ export default function App() {
                       marginLeft: "auto",
                       background: "none",
                       border: "none",
-                      color: "#333",
+                      color: "#9ca3af",
                       cursor: "pointer",
                       fontSize: "10px",
                       fontFamily: "'Space Mono', monospace",
