@@ -1873,18 +1873,18 @@ export default function App() {
                   disabled={loading}
                   style={{
                     flex: 1,
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "#f9fafb",
+                    border: "1px solid #e5e7eb",
                     borderRadius: "8px",
                     padding: "10px 14px",
-                    color: "#e0e0e0",
+                    color: "#1f2937",
                     fontSize: "13px",
                     fontFamily: "'DM Sans', sans-serif",
                     outline: "none",
                     transition: "border-color 0.2s",
                   }}
-                  onFocus={(e) => (e.target.style.borderColor = "rgba(255,107,43,0.4)")}
-                  onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
+                  onFocus={(e) => (e.target.style.borderColor = "#FF6B2B88")}
+                  onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
                 />
                 <button
                   onClick={sendMessage}
@@ -1894,15 +1894,15 @@ export default function App() {
                     borderRadius: "8px",
                     border: "none",
                     background:
-                      loading || !input.trim() ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, #FF6B2B, #FF3D00)",
-                    color: loading || !input.trim() ? "#333" : "#fff",
+                      loading || !input.trim() ? "#f3f4f6" : "linear-gradient(135deg, #FF6B2B, #FF3D00)",
+                    color: loading || !input.trim() ? "#9ca3af" : "#fff",
                     cursor: loading || !input.trim() ? "not-allowed" : "pointer",
                     fontSize: "16px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     transition: "all 0.2s",
-                    boxShadow: !loading && input.trim() ? "0 0 16px rgba(255,107,43,0.4)" : "none",
+                    boxShadow: !loading && input.trim() ? "0 2px 12px rgba(255,107,43,0.3)" : "none",
                   }}
                 >
                   →
