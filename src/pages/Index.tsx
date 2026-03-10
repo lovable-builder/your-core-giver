@@ -2044,8 +2044,8 @@ export default function App() {
 
                         {/* Simulated typing input */}
                         <div style={{
-                          background: "rgba(0,0,0,0.4)",
-                          border: "1px solid rgba(255,107,43,0.25)",
+                          background: "#fef7f3",
+                          border: "1px solid rgba(255,107,43,0.2)",
                           borderRadius: "8px",
                           padding: "12px 16px",
                           fontFamily: "'Space Mono', monospace",
@@ -2055,9 +2055,9 @@ export default function App() {
                           display: "flex",
                           alignItems: "center",
                           gap: "8px",
-                          boxShadow: "0 0 20px rgba(255,107,43,0.06), inset 0 1px 0 rgba(255,255,255,0.03)",
+                          boxShadow: "0 2px 8px rgba(255,107,43,0.06)",
                         }}>
-                          <span style={{ color: "#333", userSelect: "none" }}>⌨</span>
+                          <span style={{ color: "#d1d5db", userSelect: "none" }}>⌨</span>
                           <span>{steps[activeStep]?.button.toUpperCase()}</span>
                           <span style={{
                             width: "2px", height: "16px",
