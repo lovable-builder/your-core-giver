@@ -1248,6 +1248,7 @@ export default function App() {
           }
         }
       } catch { /* ignore */ }
+      } // end if (!resolvedFixtureType)
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/osc-agent`,
