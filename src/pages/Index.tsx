@@ -730,9 +730,8 @@ export default function App() {
     label?: string;
   }>>([]);
 
-  // ── Message buffer for throttled processing ──
+  // ── Message buffer for processing ──
   const msgBufferRef = useRef<any[]>([]);
-  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flushMessages = useCallback(() => {
     const batch = msgBufferRef.current;
@@ -1001,19 +1000,12 @@ export default function App() {
     }
   }, []);
 
-  // Handler for incoming bridge messages — buffers and flushes every 150ms
+  // Handler for incoming bridge messages — flush immediately for zero UI lag
   const handleBridgeMessage = useCallback((event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data);
       msgBufferRef.current.push(data);
-
-      // Schedule flush if not already pending
-      if (!flushTimerRef.current) {
-        flushTimerRef.current = setTimeout(() => {
-          flushTimerRef.current = null;
-          flushMessages();
-        }, 150);
-      }
+      flushMessages();
     } catch {
       // not JSON or unrecognized — ignore
     }
@@ -1040,12 +1032,12 @@ export default function App() {
           if (!disposed) {
             setWsConnected(false);
             setConsoleFeedback(prev => ({ ...prev, consoleOnline: false }));
-            wsReconnectRef.current = setTimeout(connect, 500);
+            wsReconnectRef.current = setTimeout(connect, 0);
           }
         };
         ws.onerror = () => { ws.close(); };
       } catch {
-        if (!disposed) wsReconnectRef.current = setTimeout(connect, 500);
+        if (!disposed) wsReconnectRef.current = setTimeout(connect, 0);
       }
     };
     connect();
@@ -2539,13 +2531,11 @@ export default function App() {
                   <PatchPanel
                     onPatch={async (channel, address, fixtureType) => {
                       const cmdStr = `Chan ${channel} Address ${address} Type ${fixtureType} Enter`;
-                      sendOsc("/eos/key/patch");
                       sendOsc("/eos/newcmd", cmdStr);
                       setAiOscHistory(prev => [...prev, {
                         role: "assistant",
                         text: `Patched channel ${channel} → address ${address}, type ${fixtureType}`,
                         commands: [
-                          { path: "/eos/key/patch", description: "Enter patch mode" },
                           { path: "/eos/newcmd", value: cmdStr, description: `Patch ch ${channel}` },
                         ],
                       }]);
