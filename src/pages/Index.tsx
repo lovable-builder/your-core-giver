@@ -1300,6 +1300,20 @@ export default function App() {
         }
         return [cmd];
       });
+
+      // If we resolved fixture type from official library, enforce it in any Type command
+      if (resolvedFixtureType) {
+        commands = commands.map((cmd: any) => {
+          if (cmd.path !== "/eos/newcmd" || typeof cmd.value !== "string") return cmd;
+          const typeMatch = cmd.value.match(/^(Chan\s+\d+\s+Type\s+)(.+?)(\s+Enter)$/i);
+          if (!typeMatch) return cmd;
+          return {
+            ...cmd,
+            value: `${typeMatch[1]}${resolvedFixtureType}${typeMatch[3]}`,
+            description: `Set channel fixture type to ${resolvedFixtureType}`,
+          };
+        });
+      }
       
       setAiOscHistory(prev => [...prev, { 
         role: "assistant", 
