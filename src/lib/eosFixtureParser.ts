@@ -92,11 +92,25 @@ export function searchEOSFixtures(
  *       "patch chan 5 type source four" → "source four"
  */
 export function extractFixtureTypeFromPrompt(prompt: string): string | null {
-  const match = prompt.match(/(?:fixture\s+)?type\s+(.+?)(?:\s+(?:at|on|to|address|addr|chan(?:nel)?|universe)\s|$)/i);
-  if (match) return match[1].trim();
-  // Also try end-of-string after "type"
-  const endMatch = prompt.match(/(?:fixture\s+)?type\s+(.+)$/i);
-  if (endMatch) return endMatch[1].trim();
+  const patterns = [
+    /(?:fixture\s+)?type\s+(.+?)(?:\s+(?:at|on|to|address|addr|chan(?:nel)?|universe)\s|$)/i,
+    /\bas\s+(?:a\s+)?(.+?)(?:\s+(?:at|on|to|address|addr|chan(?:nel)?|universe)\s|$)/i,
+    /\b(?:using|with)\s+(.+?)(?:\s+(?:at|on|to|address|addr|chan(?:nel)?|universe)\s|$)/i,
+  ];
+  for (const re of patterns) {
+    const match = prompt.match(re);
+    if (match && match[1].trim()) return match[1].trim();
+  }
+  // Fallback: end-of-string variants
+  const fallbacks = [
+    /(?:fixture\s+)?type\s+(.+)$/i,
+    /\bas\s+(?:a\s+)?(.+)$/i,
+    /\b(?:using|with)\s+(.+)$/i,
+  ];
+  for (const re of fallbacks) {
+    const match = prompt.match(re);
+    if (match && match[1].trim()) return match[1].trim();
+  }
   return null;
 }
 
