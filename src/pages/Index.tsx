@@ -13,7 +13,14 @@ import {
   updateStatsFromWorkflow,
   saveCorrection,
   buildLearningsPrompt,
+  createSession,
+  addSessionEntry,
+  stopSession,
+  saveSession,
+  incrementOscCommandCount,
+  incrementSessionCount,
   type PatchWorkflow,
+  type OscSession,
 } from "@/lib/patchMemoryDb";
 
 import ConsoleSteps3D from "@/components/ConsoleSteps3D";
@@ -713,10 +720,30 @@ export default function App() {
   const [aiOscPreviewMode, setAiOscPreviewMode] = useState(false);
 
   // Learning mode state
-  const [learningMode, setLearningMode] = useState(() => localStorage.getItem("bridge_learning_mode") === "true");
+  const [isRecording, setIsRecording] = useState(false);
   const [learningsRefreshKey, setLearningsRefreshKey] = useState(0);
+  const [sessionEntryCount, setSessionEntryCount] = useState(0);
   const activeWorkflowRef = useRef<PatchWorkflow | null>(null);
-  useEffect(() => { localStorage.setItem("bridge_learning_mode", String(learningMode)); }, [learningMode]);
+  const activeSessionRef = useRef<OscSession | null>(null);
+
+  const startRecording = useCallback(() => {
+    const session = createSession();
+    activeSessionRef.current = session;
+    setIsRecording(true);
+    setSessionEntryCount(0);
+  }, []);
+
+  const stopRecording = useCallback(async () => {
+    if (activeSessionRef.current) {
+      const stopped = stopSession(activeSessionRef.current);
+      await saveSession(stopped);
+      await incrementSessionCount();
+      activeSessionRef.current = null;
+    }
+    setIsRecording(false);
+    setSessionEntryCount(0);
+    setLearningsRefreshKey(k => k + 1);
+  }, []);
 
   // WebSocket bridge state
   const [bridgeUrl, setBridgeUrl] = useState(() => localStorage.getItem("eos_bridge_url") || import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8080");
@@ -1140,6 +1167,13 @@ export default function App() {
 
     setOscLogs((prev) => [...prev.slice(-99), { time, path, val: displayVal }]);
 
+    // Record to learning session if recording
+    if (activeSessionRef.current) {
+      activeSessionRef.current = addSessionEntry(activeSessionRef.current, path, displayVal || undefined);
+      setSessionEntryCount(activeSessionRef.current.entries.length);
+      incrementOscCommandCount().catch(() => {});
+    }
+
     // For /eos/newcmd commands: send as /eos/newcmd with command string as typed arg
     // Bridge will forward to EOS as /eos/user/X/newcmd + string argument
     if (path === "/eos/newcmd" && typeof value === "string" && value.length > 0) {
@@ -1530,27 +1564,27 @@ export default function App() {
 
         {/* Status */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {/* Learning Mode Toggle */}
+          {/* Record / Stop */}
           <button
-            onClick={() => setLearningMode(v => !v)}
+            onClick={() => isRecording ? stopRecording() : startRecording()}
             style={{
               display: "flex", alignItems: "center", gap: "6px",
               padding: "4px 12px", borderRadius: "20px",
-              background: learningMode ? "rgba(139,92,246,0.08)" : "rgba(0,0,0,0.03)",
-              border: `1px solid ${learningMode ? "rgba(139,92,246,0.3)" : "#e5e7eb"}`,
+              background: isRecording ? "rgba(239,68,68,0.08)" : "rgba(0,0,0,0.03)",
+              border: `1px solid ${isRecording ? "rgba(239,68,68,0.3)" : "#e5e7eb"}`,
               cursor: "pointer", transition: "all 0.2s",
               fontFamily: "'Space Mono', monospace", fontSize: "9px",
               fontWeight: "700", letterSpacing: "0.1em",
-              color: learningMode ? "#8b5cf6" : "#9ca3af",
+              color: isRecording ? "#ef4444" : "#9ca3af",
             }}
           >
             <div style={{
-              width: "6px", height: "6px", borderRadius: "50%",
-              background: learningMode ? "#8b5cf6" : "#d1d5db",
+              width: "6px", height: "6px", borderRadius: isRecording ? "2px" : "50%",
+              background: isRecording ? "#ef4444" : "#d1d5db",
               transition: "all 0.2s",
-              animation: learningMode ? "pulse-ring 2s infinite" : "none",
+              animation: isRecording ? "pulse-ring 1s infinite" : "none",
             }} />
-            {learningMode ? "LEARNING" : "LEARN"}
+            {isRecording ? `STOP (${sessionEntryCount})` : "RECORD"}
           </button>
           {/* WebSocket Bridge Status */}
           <div
@@ -2582,7 +2616,7 @@ export default function App() {
                       }]);
 
                       // Learning mode: record workflow
-                      if (learningMode) {
+                      if (isRecording) {
                         let wf = createPatchWorkflow({
                           channel,
                           fixtureType,
@@ -2638,11 +2672,11 @@ export default function App() {
               {/* Right Column */}
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                 {/* Patch Learnings Panel (visible when learning mode on) */}
-                {learningMode && (
+                {(isRecording || learningsRefreshKey > 0) && (
                   <div
                     style={{
                       background: "#fff",
-                      border: "1px solid rgba(139,92,246,0.2)",
+                      border: `1px solid ${isRecording ? "rgba(239,68,68,0.2)" : "rgba(139,92,246,0.2)"}`,
                       borderRadius: "14px",
                       padding: "16px",
                     }}
@@ -2650,15 +2684,15 @@ export default function App() {
                     <div style={{
                       display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px",
                     }}>
-                      <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#8b5cf6" }} />
+                      <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: isRecording ? "#ef4444" : "#8b5cf6" }} />
                       <span style={{
                         fontFamily: "'Space Mono', monospace", fontSize: "10px",
-                        fontWeight: "700", color: "#8b5cf6", letterSpacing: "0.1em",
+                        fontWeight: "700", color: isRecording ? "#ef4444" : "#8b5cf6", letterSpacing: "0.1em",
                       }}>
-                        PATCH LEARNINGS
+                        LEARNINGS
                       </span>
                     </div>
-                    <PatchLearningsPanel refreshKey={learningsRefreshKey} />
+                    <PatchLearningsPanel refreshKey={learningsRefreshKey} isRecording={isRecording} sessionEntryCount={sessionEntryCount} />
                   </div>
                 )}
                 {/* Custom OSC */}

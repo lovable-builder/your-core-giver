@@ -1,5 +1,5 @@
 // IndexedDB-backed learning memory for patching workflows
-// Database: OSC_AI_Memory, Stores: patch_learnings, patch_stats
+// Database: OSC_AI_Memory, Stores: patch_learnings, patch_stats, osc_session_logs
 
 export interface PatchWorkflowStep {
   step: number;
@@ -32,6 +32,21 @@ export interface PatchWorkflow {
   };
 }
 
+export interface OscLogEntry {
+  timestamp: number;
+  path: string;
+  value?: string;
+  consoleEcho?: string;
+}
+
+export interface OscSession {
+  id: string;
+  startedAt: number;
+  endedAt?: number;
+  entries: OscLogEntry[];
+  status: "recording" | "stopped";
+}
+
 export interface CorrectionRecord {
   error_id: string;
   original_command: string;
@@ -45,15 +60,18 @@ export interface PatchStats {
   total_patches_attempted: number;
   successful_patches: number;
   failed_patches: number;
+  total_osc_commands: number;
+  total_sessions: number;
   common_errors: Array<{ error_text: string; count: number }>;
   learned_commands: Record<string, string>;
 }
 
 const DB_NAME = "OSC_AI_Memory";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const LEARNINGS_STORE = "patch_learnings";
 const STATS_STORE = "patch_stats";
 const CORRECTIONS_STORE = "patch_corrections";
+const SESSIONS_STORE = "osc_sessions";
 const STATS_KEY = "global_stats";
 
 function openDb(): Promise<IDBDatabase> {
@@ -69,6 +87,9 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(CORRECTIONS_STORE)) {
         db.createObjectStore(CORRECTIONS_STORE, { keyPath: "error_id" });
+      }
+      if (!db.objectStoreNames.contains(SESSIONS_STORE)) {
+        db.createObjectStore(SESSIONS_STORE, { keyPath: "id" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -113,15 +134,6 @@ export function markStepSent(workflow: PatchWorkflow, stepNum: number): PatchWor
   };
 }
 
-export function markStepConfirmed(workflow: PatchWorkflow, stepNum: number): PatchWorkflow {
-  return {
-    ...workflow,
-    steps: workflow.steps.map(s =>
-      s.step === stepNum ? { ...s, status: "confirmed", confirmedAt: Date.now() } : s
-    ),
-  };
-}
-
 export function markStepValidated(workflow: PatchWorkflow, stepNum: number): PatchWorkflow {
   return {
     ...workflow,
@@ -148,6 +160,28 @@ export function finalizeWorkflow(workflow: PatchWorkflow, success: boolean, cons
   };
 }
 
+// ── OSC Session Recording ──
+
+export function createSession(): OscSession {
+  return {
+    id: `ses-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    startedAt: Date.now(),
+    entries: [],
+    status: "recording",
+  };
+}
+
+export function addSessionEntry(session: OscSession, path: string, value?: string, consoleEcho?: string): OscSession {
+  return {
+    ...session,
+    entries: [...session.entries, { timestamp: Date.now(), path, value, consoleEcho }],
+  };
+}
+
+export function stopSession(session: OscSession): OscSession {
+  return { ...session, endedAt: Date.now(), status: "stopped" };
+}
+
 // ── Persistence ──
 
 export async function saveWorkflow(workflow: PatchWorkflow): Promise<void> {
@@ -157,6 +191,29 @@ export async function saveWorkflow(workflow: PatchWorkflow): Promise<void> {
     tx.objectStore(LEARNINGS_STORE).put(workflow);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function saveSession(session: OscSession): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(SESSIONS_STORE, "readwrite");
+    tx.objectStore(SESSIONS_STORE).put(session);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function loadSessions(limit = 10): Promise<OscSession[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(SESSIONS_STORE, "readonly");
+    const req = tx.objectStore(SESSIONS_STORE).getAll();
+    req.onsuccess = () => {
+      const all = (req.result as OscSession[]).sort((a, b) => b.startedAt - a.startedAt);
+      resolve(all.slice(0, limit));
+    };
+    req.onerror = () => reject(req.error);
   });
 }
 
@@ -173,13 +230,14 @@ export async function loadWorkflows(limit = 50): Promise<PatchWorkflow[]> {
   });
 }
 
-export async function clearAllWorkflows(): Promise<void> {
+export async function clearAllData(): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction([LEARNINGS_STORE, STATS_STORE, CORRECTIONS_STORE], "readwrite");
+    const tx = db.transaction([LEARNINGS_STORE, STATS_STORE, CORRECTIONS_STORE, SESSIONS_STORE], "readwrite");
     tx.objectStore(LEARNINGS_STORE).clear();
     tx.objectStore(STATS_STORE).clear();
     tx.objectStore(CORRECTIONS_STORE).clear();
+    tx.objectStore(SESSIONS_STORE).clear();
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
@@ -192,6 +250,8 @@ function defaultStats(): PatchStats {
     total_patches_attempted: 0,
     successful_patches: 0,
     failed_patches: 0,
+    total_osc_commands: 0,
+    total_sessions: 0,
     common_errors: [],
     learned_commands: {},
   };
@@ -217,12 +277,23 @@ async function saveStats(stats: PatchStats): Promise<void> {
   });
 }
 
+export async function incrementOscCommandCount(count = 1): Promise<void> {
+  const stats = await loadStats();
+  stats.total_osc_commands += count;
+  await saveStats(stats);
+}
+
+export async function incrementSessionCount(): Promise<void> {
+  const stats = await loadStats();
+  stats.total_sessions++;
+  await saveStats(stats);
+}
+
 export async function updateStatsFromWorkflow(workflow: PatchWorkflow): Promise<PatchStats> {
   const stats = await loadStats();
   stats.total_patches_attempted++;
   if (workflow.feedback.success) {
     stats.successful_patches++;
-    // Learn the command pattern
     const key = `fixture_type_${workflow.input.fixtureType.toLowerCase().replace(/\s+/g, "_")}`;
     stats.learned_commands[key] = `Chan X Type ${workflow.input.fixtureType} Enter`;
   } else {
@@ -267,12 +338,13 @@ export async function loadCorrections(): Promise<CorrectionRecord[]> {
 // ── Export ──
 
 export async function exportAllLearnings(): Promise<string> {
-  const [workflows, stats, corrections] = await Promise.all([
+  const [workflows, stats, corrections, sessions] = await Promise.all([
     loadWorkflows(999),
     loadStats(),
     loadCorrections(),
+    loadSessions(999),
   ]);
-  return JSON.stringify({ workflows, stats, corrections, exportedAt: new Date().toISOString() }, null, 2);
+  return JSON.stringify({ workflows, stats, corrections, sessions, exportedAt: new Date().toISOString() }, null, 2);
 }
 
 // ── AI Prompt Injection ──
