@@ -712,6 +712,12 @@ export default function App() {
   }>>([]);
   const [aiOscPreviewMode, setAiOscPreviewMode] = useState(false);
 
+  // Learning mode state
+  const [learningMode, setLearningMode] = useState(() => localStorage.getItem("bridge_learning_mode") === "true");
+  const [learningsRefreshKey, setLearningsRefreshKey] = useState(0);
+  const activeWorkflowRef = useRef<PatchWorkflow | null>(null);
+  useEffect(() => { localStorage.setItem("bridge_learning_mode", String(learningMode)); }, [learningMode]);
+
   // WebSocket bridge state
   const [bridgeUrl, setBridgeUrl] = useState(() => localStorage.getItem("eos_bridge_url") || import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8080");
   const BRIDGE_URL = bridgeUrl;
