@@ -2609,7 +2609,7 @@ export default function App() {
                       }]);
 
                       // Learning mode: record workflow
-                      if (learningMode) {
+                      if (isRecording) {
                         let wf = createPatchWorkflow({
                           channel,
                           fixtureType,
