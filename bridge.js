@@ -4,8 +4,8 @@
  * Run: npm install ws osc && node bridge.js
  */
 
-const { Server: WebSocketServer } = require("ws");
-const osc = require("osc");
+import { WebSocketServer } from "ws";
+import osc from "osc";
 
 const WS_PORT = parseInt(process.env.PORT || "8080", 10);
 const EOS_USER = process.env.EOS_USER || "1";
@@ -18,7 +18,7 @@ console.log(`  Waiting for connections...\n`);
 
 const udpPort = new osc.UDPPort({
   localAddress: "0.0.0.0",
-  localPort: 0,
+  localPort: 3033,
   metadata: true,
 });
 udpPort.open();

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { loadEOSFixtures, searchEOSFixtures, type EOSFixture } from "@/lib/eosFixtureParser";
+import { FIXTURES, type Fixture, type FixtureMode } from "@/data/fixtures";
 
 interface PatchPanelProps {
   onPatch: (channel: number, address: number, fixtureType: string) => void;

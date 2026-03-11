@@ -917,6 +917,26 @@ export default function App() {
       setActiveCue(prev => prev === newActiveCue ? prev : newActiveCue!);
     }
 
+    // Record console feedback to learning session if recording
+    if (activeSessionRef.current && (commandLineText !== null || newActiveCue !== null || channelUpdates.length > 0)) {
+      // Record command line feedback
+      if (commandLineText !== null) {
+        activeSessionRef.current = addSessionEntry(activeSessionRef.current, "/eos/out/command_line", commandLineText);
+      }
+      // Record active cue changes
+      if (newActiveCue !== null) {
+        activeSessionRef.current = addSessionEntry(activeSessionRef.current, "/eos/out/active_cue", newActiveCue);
+      }
+      // Record channel intensity changes
+      if (channelUpdates.length > 0) {
+        for (const ch of channelUpdates) {
+          activeSessionRef.current = addSessionEntry(activeSessionRef.current, `/eos/out/chan/${ch.channel}/intensity`, String(ch.intensity));
+        }
+      }
+      setSessionEntryCount(activeSessionRef.current.entries.length);
+      incrementOscCommandCount().catch(() => {});
+    }
+
     if (channelUpdates.length > 0) {
       setChannels(prev => {
         const updated = [...prev];
@@ -2770,21 +2790,148 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Log */}
+              {/* Log */}
+              <div
+                style={{
+                  flex: 1,
+                  background: "#fff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "14px",
+                  padding: "16px",
+                  minHeight: "200px",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <CommandLog logs={oscLogs} onClear={() => setOscLogs([])} />
+              </div>
+
+              {/* Debug Console Feedback Window */}
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "14px",
+                  padding: "16px",
+                  minHeight: "200px",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <div style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px"
+                }}>
+                  <span style={{ fontSize: "10px", color: "#9ca3af", fontFamily: "'Space Mono', monospace", letterSpacing: "0.1em" }}>
+                    DEBUG: CONSOLE FEEDBACK
+                  </span>
+                  <button
+                    onClick={() => {
+                      setConsoleFeedback({
+                        activeCue: null,
+                        commandLine: "",
+                        channelCount: 0,
+                        consoleOnline: false,
+                        lastPong: null,
+                      });
+                      setConsolePatch([]);
+                      setChannels([]);
+                      setCues([]);
+                      setActiveCue(null);
+                      setCuesLive(false);
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#9ca3af",
+                      cursor: "pointer",
+                      fontSize: "10px",
+                      fontFamily: "'Space Mono', monospace",
+                    }}
+                  >
+                    CLEAR
+                  </button>
+                </div>
                 <div
                   style={{
                     flex: 1,
-                    background: "#fff",
+                    overflowY: "auto",
+                    background: "#f9fafb",
+                    borderRadius: "8px",
+                    padding: "10px",
                     border: "1px solid #e5e7eb",
-                    borderRadius: "14px",
-                    padding: "16px",
-                    minHeight: "200px",
-                    display: "flex",
-                    flexDirection: "column",
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "11px",
+                    color: "#1f2937",
+                    lineHeight: "1.6",
                   }}
                 >
-                  <CommandLog logs={oscLogs} onClear={() => setOscLogs([])} />
+                  <div style={{ marginBottom: "8px", fontWeight: "700", color: "#FF6B2B" }}>
+                    Console Status: {consoleFeedback.consoleOnline ? "ONLINE" : "OFFLINE"}
+                  </div>
+                  {consoleFeedback.lastPong && (
+                    <div style={{ marginBottom: "4px", color: "#6b7280" }}>
+                      Last Ping: {new Date(consoleFeedback.lastPong).toLocaleTimeString()}
+                    </div>
+                  )}
+                  <div style={{ marginBottom: "8px", color: "#6b7280" }}>
+                    Active Cue: {consoleFeedback.activeCue || "None"}
+                  </div>
+                  <div style={{ marginBottom: "8px", color: "#6b7280" }}>
+                    Channel Count: {consoleFeedback.channelCount}
+                  </div>
+                  <div style={{ marginBottom: "8px", color: "#6b7280" }}>
+                    Command Line: "{consoleFeedback.commandLine}"
+                  </div>
+                  
+                  <div style={{ marginTop: "12px", fontWeight: "700", color: "#FF6B2B", marginBottom: "4px" }}>
+                    Channels ({channels.length}):
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2px", fontSize: "10px" }}>
+                    {channels.slice(0, 20).map((ch, i) => (
+                      <div key={i} style={{ color: "#6b7280" }}>
+                        Ch {ch.id}: {ch.intensity}%
+                      </div>
+                    ))}
+                    {channels.length > 20 && (
+                      <div style={{ color: "#9ca3af", gridColumn: "1 / -1" }}>
+                        ... and {channels.length - 20} more
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: "12px", fontWeight: "700", color: "#FF6B2B", marginBottom: "4px" }}>
+                    Cues ({cues.length}):
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2px", fontSize: "10px" }}>
+                    {cues.slice(0, 15).map((cue, i) => (
+                      <div key={i} style={{ color: "#6b7280" }}>
+                        {cue.id}: {cue.label || "—"} ({cue.time}s)
+                      </div>
+                    ))}
+                    {cues.length > 15 && (
+                      <div style={{ color: "#9ca3af", gridColumn: "1 / -1" }}>
+                        ... and {cues.length - 15} more
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: "12px", fontWeight: "700", color: "#FF6B2B", marginBottom: "4px" }}>
+                    Patch ({consolePatch.length}):
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2px", fontSize: "10px" }}>
+                    {consolePatch.slice(0, 15).map((p, i) => (
+                      <div key={i} style={{ color: "#6b7280" }}>
+                        Ch {p.channel}: U{p.universe}/{p.address}
+                      </div>
+                    ))}
+                    {consolePatch.length > 15 && (
+                      <div style={{ color: "#9ca3af", gridColumn: "1 / -1" }}>
+                        ... and {consolePatch.length - 15} more
+                      </div>
+                    )}
+                  </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>
