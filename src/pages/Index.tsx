@@ -1167,6 +1167,13 @@ export default function App() {
 
     setOscLogs((prev) => [...prev.slice(-99), { time, path, val: displayVal }]);
 
+    // Record to learning session if recording
+    if (activeSessionRef.current) {
+      activeSessionRef.current = addSessionEntry(activeSessionRef.current, path, displayVal || undefined);
+      setSessionEntryCount(activeSessionRef.current.entries.length);
+      incrementOscCommandCount().catch(() => {});
+    }
+
     // For /eos/newcmd commands: send as /eos/newcmd with command string as typed arg
     // Bridge will forward to EOS as /eos/user/X/newcmd + string argument
     if (path === "/eos/newcmd" && typeof value === "string" && value.length > 0) {
