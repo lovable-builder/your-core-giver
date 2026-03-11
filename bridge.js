@@ -7,7 +7,7 @@
 import { WebSocketServer } from "ws";
 import osc from "osc";
 
-const WS_PORT = parseInt(process.env.PORT || "8080", 10);
+const WS_PORT = parseInt(process.env.PORT || "8081", 10);
 const EOS_USER = process.env.EOS_USER || "1";
 
 const wss = new WebSocketServer({ port: WS_PORT });

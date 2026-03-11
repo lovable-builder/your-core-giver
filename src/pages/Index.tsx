@@ -746,7 +746,7 @@ export default function App() {
   }, []);
 
   // WebSocket bridge state
-  const [bridgeUrl, setBridgeUrl] = useState(() => localStorage.getItem("eos_bridge_url") || import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8080");
+  const [bridgeUrl, setBridgeUrl] = useState(() => localStorage.getItem("eos_bridge_url") || import.meta.env.VITE_BRIDGE_URL || "ws://localhost:8081");
   const BRIDGE_URL = bridgeUrl;
   const wsRef = useRef<WebSocket | null>(null);
   const wsReconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2625,13 +2625,14 @@ export default function App() {
                 {oscTab === "Patching" ? (
                   <PatchPanel
                     onPatch={async (channel, address, fixtureType) => {
-                      const cmdStr = `Chan ${channel} Address ${address} Type ${fixtureType} Enter`;
+                      const cmdStr = `Chan ${channel} Type "${fixtureType}" @ ${address} Enter`;
                       sendOsc("/eos/newcmd", cmdStr);
+                      
                       setAiOscHistory(prev => [...prev, {
                         role: "assistant",
                         text: `Patched channel ${channel} → address ${address}, type ${fixtureType}`,
                         commands: [
-                          { path: "/eos/newcmd", value: cmdStr, description: `Patch ch ${channel}` },
+                          { path: "/eos/newcmd", value: cmdStr, description: `Patch ch ${channel} with type` },
                         ],
                       }]);
 

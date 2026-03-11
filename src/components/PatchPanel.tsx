@@ -56,7 +56,10 @@ export default function PatchPanel({ onPatch }: PatchPanelProps) {
 
   const handlePatch = () => {
     if (!canPatch) return;
-    onPatch(parseInt(channel, 10), parseInt(address, 10), selectedFixture!.t);
+    const manufacturer = selectedFixture!.m;
+    const model = selectedFixture!.t.replace(/_/g, ' ');
+    const fixtureCommandType = `${manufacturer} ${model}`;
+    onPatch(parseInt(channel, 10), parseInt(address, 10), fixtureCommandType);
   };
 
   const inputStyle: React.CSSProperties = {
@@ -287,7 +290,7 @@ export default function PatchPanel({ onPatch }: PatchPanelProps) {
         }}>
           <span style={{ fontSize: "9px", color: "#9ca3af", fontFamily: "'Space Mono', monospace" }}>CMD:</span>
           <span style={{ fontSize: "11px", color: "#FF6B2B", fontFamily: "'Space Mono', monospace" }}>
-            Chan {channel} Address {address} Type {selectedFixture!.t} Enter
+            Chan {channel} Type "{selectedFixture!.m} {selectedFixture!.t.replace(/_/g, ' ')}" @ {address} Enter
           </span>
         </div>
       )}

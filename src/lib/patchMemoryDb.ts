@@ -106,8 +106,7 @@ function uuid(): string {
 export function createPatchWorkflow(input: PatchWorkflowInput): PatchWorkflow {
   const steps: PatchWorkflowStep[] = [
     { step: 1, action: "/eos/key/patch", status: "pending" },
-    { step: 2, action: `Chan ${input.channel} Type ${input.fixtureType} Enter`, status: "pending" },
-    { step: 3, action: `Chan ${input.channel} Address ${input.universe}/${input.dmxAddress} Enter`, status: "pending" },
+    { step: 2, action: `Chan ${input.channel} Type "${input.fixtureType}" @ ${input.dmxAddress} Enter`, status: "pending" },
   ];
   if (input.label) {
     steps.push({ step: steps.length + 1, action: `Chan ${input.channel} Label ${input.label} Enter`, status: "pending" });
