@@ -1557,27 +1557,27 @@ export default function App() {
 
         {/* Status */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {/* Learning Mode Toggle */}
+          {/* Record / Stop */}
           <button
-            onClick={() => setLearningMode(v => !v)}
+            onClick={() => isRecording ? stopRecording() : startRecording()}
             style={{
               display: "flex", alignItems: "center", gap: "6px",
               padding: "4px 12px", borderRadius: "20px",
-              background: learningMode ? "rgba(139,92,246,0.08)" : "rgba(0,0,0,0.03)",
-              border: `1px solid ${learningMode ? "rgba(139,92,246,0.3)" : "#e5e7eb"}`,
+              background: isRecording ? "rgba(239,68,68,0.08)" : "rgba(0,0,0,0.03)",
+              border: `1px solid ${isRecording ? "rgba(239,68,68,0.3)" : "#e5e7eb"}`,
               cursor: "pointer", transition: "all 0.2s",
               fontFamily: "'Space Mono', monospace", fontSize: "9px",
               fontWeight: "700", letterSpacing: "0.1em",
-              color: learningMode ? "#8b5cf6" : "#9ca3af",
+              color: isRecording ? "#ef4444" : "#9ca3af",
             }}
           >
             <div style={{
-              width: "6px", height: "6px", borderRadius: "50%",
-              background: learningMode ? "#8b5cf6" : "#d1d5db",
+              width: "6px", height: "6px", borderRadius: isRecording ? "2px" : "50%",
+              background: isRecording ? "#ef4444" : "#d1d5db",
               transition: "all 0.2s",
-              animation: learningMode ? "pulse-ring 2s infinite" : "none",
+              animation: isRecording ? "pulse-ring 1s infinite" : "none",
             }} />
-            {learningMode ? "LEARNING" : "LEARN"}
+            {isRecording ? `STOP (${sessionEntryCount})` : "RECORD"}
           </button>
           {/* WebSocket Bridge Status */}
           <div
