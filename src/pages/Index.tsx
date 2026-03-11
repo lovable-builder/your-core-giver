@@ -2637,6 +2637,30 @@ export default function App() {
 
               {/* Right Column */}
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                {/* Patch Learnings Panel (visible when learning mode on) */}
+                {learningMode && (
+                  <div
+                    style={{
+                      background: "#fff",
+                      border: "1px solid rgba(139,92,246,0.2)",
+                      borderRadius: "14px",
+                      padding: "16px",
+                    }}
+                  >
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px",
+                    }}>
+                      <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#8b5cf6" }} />
+                      <span style={{
+                        fontFamily: "'Space Mono', monospace", fontSize: "10px",
+                        fontWeight: "700", color: "#8b5cf6", letterSpacing: "0.1em",
+                      }}>
+                        PATCH LEARNINGS
+                      </span>
+                    </div>
+                    <PatchLearningsPanel refreshKey={learningsRefreshKey} />
+                  </div>
+                )}
                 {/* Custom OSC */}
                 <div
                   style={{
