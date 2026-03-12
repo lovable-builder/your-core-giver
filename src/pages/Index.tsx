@@ -2625,14 +2625,16 @@ export default function App() {
                 {oscTab === "Patching" ? (
                   <PatchPanel
                     onPatch={async (channel, address, fixtureType) => {
-                      const cmdStr = `Chan ${channel} Type "${fixtureType}" @ ${address} Enter`;
-                      sendOsc("/eos/newcmd", cmdStr);
+                      // Use direct /eos/set/patch API — no command-line parsing needed
+                      sendOsc(`/eos/set/patch/${channel}/type`, fixtureType);
+                      sendOsc(`/eos/set/patch/${channel}/address`, String(address));
                       
                       setAiOscHistory(prev => [...prev, {
                         role: "assistant",
-                        text: `Patched channel ${channel} → address ${address}, type ${fixtureType}`,
+                        text: `Patched channel ${channel} → type "${fixtureType}", address ${address}`,
                         commands: [
-                          { path: "/eos/newcmd", value: cmdStr, description: `Patch ch ${channel} with type` },
+                          { path: `/eos/set/patch/${channel}/type`, value: fixtureType, description: `Set fixture type` },
+                          { path: `/eos/set/patch/${channel}/address`, value: String(address), description: `Set DMX address` },
                         ],
                       }]);
 
@@ -2645,29 +2647,27 @@ export default function App() {
                           universe: 1,
                           label: "",
                         });
-                        // Mark all steps as sent immediately (commands fire instantly)
                         for (const s of wf.steps) {
                           wf = markStepSent(wf, s.step);
                         }
                         activeWorkflowRef.current = wf;
 
-                        // Wait briefly for console echo, then finalize
+                        // With direct API, less likely to get syntax errors — validate after brief delay
                         setTimeout(async () => {
                           const cmdLine = consoleFeedback.commandLine || "";
                           const hasError = /error|invalid|syntax/i.test(cmdLine);
                           if (hasError) {
-                            wf = markStepFailed(wf, 2, cmdLine);
+                            wf = markStepFailed(wf, 1, cmdLine);
                             wf = finalizeWorkflow(wf, false, cmdLine, cmdLine);
                             await saveCorrection({
                               error_id: `err-${Date.now()}`,
-                              original_command: cmdStr,
+                              original_command: `/eos/set/patch/${channel}/type → ${fixtureType}`,
                               console_response: cmdLine,
-                              likely_cause: "Command syntax rejected by console",
-                              correction_needed: "Check command format and patch mode state",
+                              likely_cause: "Fixture type name may not match library exactly",
+                              correction_needed: "Verify fixture name matches EOS library including mode suffix",
                               timestamp: Date.now(),
                             });
                           } else {
-                            // Mark validated
                             for (const s of wf.steps) {
                               wf = markStepValidated(wf, s.step);
                             }

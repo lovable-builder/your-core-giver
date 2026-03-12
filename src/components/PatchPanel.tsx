@@ -286,10 +286,15 @@ export default function PatchPanel({ onPatch }: PatchPanelProps) {
           padding: "8px 14px",
           display: "flex", alignItems: "center", gap: "8px",
         }}>
-          <span style={{ fontSize: "9px", color: "#9ca3af", fontFamily: "'Space Mono', monospace" }}>CMD:</span>
-          <span style={{ fontSize: "11px", color: "#FF6B2B", fontFamily: "'Space Mono', monospace" }}>
-            Chan {channel} Type "{selectedFixture!.m} {selectedFixture!.t.replace(/_/g, ' ')}" @ {address} Enter
-          </span>
+          <span style={{ fontSize: "9px", color: "#9ca3af", fontFamily: "'Space Mono', monospace" }}>API:</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <span style={{ fontSize: "11px", color: "#FF6B2B", fontFamily: "'Space Mono', monospace" }}>
+              /eos/set/patch/{channel}/type → "{selectedFixture!.n}"
+            </span>
+            <span style={{ fontSize: "11px", color: "#FF6B2B", fontFamily: "'Space Mono', monospace" }}>
+              /eos/set/patch/{channel}/address → {address}
+            </span>
+          </div>
         </div>
       )}
     </div>
