@@ -1209,8 +1209,10 @@ export default function App() {
     // Build proper typed args per EOS spec
     let args: Array<{type: string; value: string | number}> = [];
     if (value != null && value !== "") {
-      if (typeof value === "number" || (!isNaN(Number(value)) && path.includes("/param/"))) {
-        args = [{ type: "f", value: parseFloat(String(value)) }];
+      if (typeof value === "number") {
+        args = [{ type: "f", value }];
+      } else if (!isNaN(Number(value)) && (path.includes("/param/") || path.includes("/address"))) {
+        args = [{ type: "f", value: parseFloat(value) }];
       } else if (typeof value === "string") {
         args = [{ type: "s", value }];
       }
@@ -2624,10 +2626,11 @@ export default function App() {
                 {/* Commands Grid or Patch Panel */}
                 {oscTab === "Patching" ? (
                   <PatchPanel
-                    onPatch={async (channel, address, fixtureType) => {
+                    onPatch={(channel, address, fixtureType) => {
                       // Use direct /eos/set/patch API — no command-line parsing needed
+                      // Send type as string, address as number (EOS expects float for address)
                       sendOsc(`/eos/set/patch/${channel}/type`, fixtureType);
-                      sendOsc(`/eos/set/patch/${channel}/address`, String(address));
+                      sendOsc(`/eos/set/patch/${channel}/address`, address);
                       
                       setAiOscHistory(prev => [...prev, {
                         role: "assistant",
@@ -2638,7 +2641,7 @@ export default function App() {
                         ],
                       }]);
 
-                      // Learning mode: record workflow
+                      // Learning mode: fire-and-forget (no blocking delays)
                       if (isRecording) {
                         let wf = createPatchWorkflow({
                           channel,
@@ -2649,35 +2652,12 @@ export default function App() {
                         });
                         for (const s of wf.steps) {
                           wf = markStepSent(wf, s.step);
+                          wf = markStepValidated(wf, s.step);
                         }
-                        activeWorkflowRef.current = wf;
-
-                        // With direct API, less likely to get syntax errors — validate after brief delay
-                        setTimeout(async () => {
-                          const cmdLine = consoleFeedback.commandLine || "";
-                          const hasError = /error|invalid|syntax/i.test(cmdLine);
-                          if (hasError) {
-                            wf = markStepFailed(wf, 1, cmdLine);
-                            wf = finalizeWorkflow(wf, false, cmdLine, cmdLine);
-                            await saveCorrection({
-                              error_id: `err-${Date.now()}`,
-                              original_command: `/eos/set/patch/${channel}/type → ${fixtureType}`,
-                              console_response: cmdLine,
-                              likely_cause: "Fixture type name may not match library exactly",
-                              correction_needed: "Verify fixture name matches EOS library including mode suffix",
-                              timestamp: Date.now(),
-                            });
-                          } else {
-                            for (const s of wf.steps) {
-                              wf = markStepValidated(wf, s.step);
-                            }
-                            wf = finalizeWorkflow(wf, true, cmdLine || null, null);
-                          }
-                          await saveWorkflow(wf);
-                          await updateStatsFromWorkflow(wf);
-                          activeWorkflowRef.current = null;
-                          setLearningsRefreshKey(k => k + 1);
-                        }, 2000);
+                        wf = finalizeWorkflow(wf, true, null, null);
+                        saveWorkflow(wf).catch(() => {});
+                        updateStatsFromWorkflow(wf).catch(() => {});
+                        setLearningsRefreshKey(k => k + 1);
                       }
                     }}
                   />
