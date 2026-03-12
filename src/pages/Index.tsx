@@ -2635,7 +2635,7 @@ export default function App() {
                         text: `Patched channel ${channel} → type "${fixtureType}", address ${address}`,
                         commands: [
                           { path: `/eos/set/patch/${channel}/type`, value: fixtureType, description: `Set fixture type` },
-                          { path: `/eos/set/patch/${channel}/address`, value: address, description: `Set DMX address` },
+                          { path: `/eos/set/patch/${channel}/address`, value: String(address), description: `Set DMX address` },
                         ],
                       }]);
 
