@@ -1209,8 +1209,10 @@ export default function App() {
     // Build proper typed args per EOS spec
     let args: Array<{type: string; value: string | number}> = [];
     if (value != null && value !== "") {
-      if (typeof value === "number" || (!isNaN(Number(value)) && path.includes("/param/"))) {
-        args = [{ type: "f", value: parseFloat(String(value)) }];
+      if (typeof value === "number") {
+        args = [{ type: "f", value }];
+      } else if (!isNaN(Number(value)) && (path.includes("/param/") || path.includes("/address"))) {
+        args = [{ type: "f", value: parseFloat(value) }];
       } else if (typeof value === "string") {
         args = [{ type: "s", value }];
       }
