@@ -1,52 +1,39 @@
 
 
-## Plan: Switch to `/eos/set/patch` API for Patching
+# Plan: Implement ETC Console AI Main Component
 
-### Why this is better
+## What happened
+You pasted a large single-file React component for the ETC Console AI app, but **the code is truncated** — it cuts off mid-render inside the "LIVE STAGE" module at `{channels.filter(c => c.in`. The component cannot be implemented as-is because the JSX is incomplete.
 
-The screenshot confirms EOS supports direct patch API calls via `/eos/set/patch/<channel>/type` and `/eos/set/patch/<channel>/address`. This bypasses the command line entirely — no parsing, no syntax errors, no `Enter` needed.
+## What I can see
+The pasted code contains:
+- **ParticleField** — canvas-based animated background
+- **SpectrumBar** — audio-style visualizer bars
+- **GlowButton** — styled button with glow effects
+- **StepCard** — console instruction step cards
+- **OscCard** — OSC command sender cards
+- **FixtureGrid** — channel color/intensity visualizer
+- **CueStack** — cue list with active highlight
+- **CommandLog** — scrollable OSC command log
+- **Main App** — three modules: AI Guide, OSC Control, Live Stage
 
-### Changes
+All use inline styles (no Tailwind), and the AI Guide calls the Anthropic API directly from the client (which exposes the API key — should use Lovable AI via edge function instead).
 
-#### 1. Update `PatchPanel.tsx`
-- The `onPatch` callback already passes channel, address, and fixtureType
-- The fixture type string needs to be the **exact library name including mode** (e.g., `"AAdyn Technology JAB Daylight 1ch"`)
-- Currently building `"Manufacturer Model"` — need to use `f.n` (the full name from the fixture library) instead, since that matches what EOS expects
+## Issues to resolve before implementing
 
-#### 2. Update `Index.tsx` — `onPatch` handler
-Replace the single `/eos/newcmd` call with two direct API calls:
+1. **Incomplete code** — The "LIVE STAGE" module JSX is cut off. I need the rest of the component to implement it fully.
+2. **JSX syntax** — The pasted code has bare `<div>` tags without className/style attributes in many places (likely stripped during copy). This will need reconstruction.
+3. **Direct Anthropic API call** — The `fetchSteps` function calls `api.anthropic.com` directly from the browser, which is insecure and won't work due to CORS. Should be routed through Lovable AI (edge function).
 
-```
-sendOsc("/eos/set/patch/{channel}/type", fixtureType)   // exact library name
-sendOsc("/eos/set/patch/{channel}/address", address)     // DMX address as number
-```
+## Proposed approach (once complete code is provided)
 
-No `/eos/key/patch` needed. No `Enter` needed. No command-line parsing.
+1. **Create `src/pages/Index.tsx`** — Convert the full component into a properly typed TypeScript React component
+2. **Split into sub-components** — Place helpers (ParticleField, GlowButton, StepCard, OscCard, etc.) into `src/components/` files
+3. **Replace Anthropic direct call** — Use Lovable AI gateway via an edge function for the AI Guide module
+4. **Load fonts** — Add Google Fonts link to `index.html` for Space Mono and DM Sans
+5. **Update CSS** — Set dark background in `index.css`
 
-Optionally, if label is added later:
-```
-sendOsc("/eos/set/patch/{channel}/label", labelText)
-```
+## Next step
 
-#### 3. Update `PatchPanel.tsx` — fixture type string
-Change from `"${manufacturer} ${model}"` to use the full fixture name `f.n` which matches the library exactly (e.g., `"AAdyn Technology JAB Daylight 1ch"`). The `EOSFixture.n` field already stores this.
-
-Update the CMD preview to show the two API calls instead of the command-line syntax.
-
-#### 4. Update `patchMemoryDb.ts` — workflow steps
-Update `createPatchWorkflow` steps to reflect the new API approach:
-- Step 1: `/eos/set/patch/{ch}/type` → fixtureType
-- Step 2: `/eos/set/patch/{ch}/address` → dmxAddress
-- Step 3 (optional): `/eos/set/patch/{ch}/label` → label
-
-#### 5. Update bridge passthrough
-The bridge's `withUserPath` and `parseEosCommand` already handle `/eos/set/...` paths as passthrough — they'll get user-prefixed automatically. No bridge changes needed.
-
-#### 6. Update memory
-Record this API approach preference in `mem://features/osc_responsiveness.md`.
-
-### Files to modify
-- `src/components/PatchPanel.tsx` — use `f.n` for fixture type, update preview
-- `src/pages/Index.tsx` — replace `/eos/newcmd` with two `/eos/set/patch/` calls
-- `src/lib/patchMemoryDb.ts` — update workflow step definitions
+**Please paste the remaining portion of the component** (from the Live Stage module onward through the closing of the App component) so I can implement the complete application.
 

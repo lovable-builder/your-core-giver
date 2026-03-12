@@ -105,13 +105,12 @@ function uuid(): string {
 
 export function createPatchWorkflow(input: PatchWorkflowInput): PatchWorkflow {
   const steps: PatchWorkflowStep[] = [
-    { step: 1, action: "/eos/key/patch", status: "pending" },
-    { step: 2, action: `Chan ${input.channel} Type "${input.fixtureType}" @ ${input.dmxAddress} Enter`, status: "pending" },
+    { step: 1, action: `/eos/set/patch/${input.channel}/type → ${input.fixtureType}`, status: "pending" },
+    { step: 2, action: `/eos/set/patch/${input.channel}/address → ${input.dmxAddress}`, status: "pending" },
   ];
   if (input.label) {
-    steps.push({ step: steps.length + 1, action: `Chan ${input.channel} Label ${input.label} Enter`, status: "pending" });
+    steps.push({ step: steps.length + 1, action: `/eos/set/patch/${input.channel}/label → ${input.label}`, status: "pending" });
   }
-  steps.push({ step: steps.length + 1, action: "/eos/key/live", status: "pending" });
 
   return {
     id: uuid(),
